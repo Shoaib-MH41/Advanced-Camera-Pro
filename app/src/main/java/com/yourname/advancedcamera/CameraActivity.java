@@ -44,7 +44,10 @@ public class CameraActivity extends AppCompatActivity {
     
     private static final String TAG = "AdvancedCamera";
     private static final int REQUEST_CAMERA_PERMISSION = 200;
-    
+    private FeatureManager featureManager;
+    private ColorLUTs colorLUTs;
+    private NightModeProcessor nightProcessor;
+  
     // Camera components
     private CameraManager cameraManager;
     private CameraDevice cameraDevice;
