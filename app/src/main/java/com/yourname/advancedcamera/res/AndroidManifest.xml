@@ -1,0 +1,65 @@
+package com.yourname.advancedcamera;
+
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.content.pm.PackageManager;
+import android.hardware.camera2.*;
+import android.os.Bundle;
+import android.view.Surface;
+import android.view.View;
+import android.widget.*;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import java.util.Arrays;
+
+public class CameraActivity extends AppCompatActivity {
+    
+    private CameraManager cameraManager;
+    private String cameraId;
+    private CameraDevice cameraDevice;
+    private CameraCaptureSession captureSession;
+    private ImageReader imageReader;
+    
+    // Beautiful UI Components
+    private TextureView textureView;
+    private Button btnCapture, btnSwitch;
+    private SeekBar seekExposure, seekZoom;
+    private TextView tvStatus;
+    private LinearLayout controlPanel;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_camera_pro);
+        
+        initializeViews();
+        setupCamera();
+    }
+
+    private void initializeViews() {
+        textureView = findViewById(R.id.texture_view);
+        btnCapture = findViewById(R.id.btn_capture);
+        btnSwitch = findViewById(R.id.btn_switch);
+        seekExposure = findViewById(R.id.seek_exposure);
+        seekZoom = findViewById(R.id.seek_zoom);
+        tvStatus = findViewById(R.id.tv_status);
+        controlPanel = findViewById(R.id.control_panel);
+
+        // Modern UI Styling
+        setupModernUI();
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private void setupModernUI() {
+        // Gradient backgrounds and modern buttons
+        btnCapture.setBackgroundResource(R.drawable.btn_capture_modern);
+        btnSwitch.setBackgroundResource(R.drawable.btn_switch_modern);
+        
+        // SeekBar styling
+        seekExposure.setProgressTintList(getColorStateList(R.color.accent_gradient));
+        seekZoom.setProgressTintList(getColorStateList(R.color.accent_gradient));
+        
+        // Touch controls for focus and exposure
+        textureView.setOnTouchListener(new TouchFocusController());
+    }
+}
