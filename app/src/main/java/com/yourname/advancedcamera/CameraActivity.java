@@ -37,7 +37,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
+import com.yourname.advancedcamera.features.FeatureManager;
+import com.yourname.advancedcamera.features.color.ColorLUTs;
+import com.yourname.advancedcamera.features.night.NightModeProcessor;
 public class CameraActivity extends AppCompatActivity {
     
     private static final String TAG = "AdvancedCamera";
