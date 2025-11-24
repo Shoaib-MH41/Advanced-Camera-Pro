@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Advanced Camera Pro</string>
+    <string name="camera_ready">PRO MODE</string>
+    <string name="exposure">Exposure</string>
+    <string name="iso">ISO</string>
+    <string name="zoom">Zoom</string>
+    <string name="recording">REC</string>
+    <string name="auto">AUTO</string>
+    <string name="pro">PRO</string>
+    <string name="night">NIGHT</string>
+    <string name="portrait">PORTRAIT</string>
+    <string name="video">VIDEO</string>
+</resources>
