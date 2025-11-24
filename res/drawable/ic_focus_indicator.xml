@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="60dp"
+    android:height="60dp"
+    android:viewportWidth="60"
+    android:viewportHeight="60">
+    
+    <!-- Outer Circle -->
+    <path
+        android:strokeColor="@color/white"
+        android:strokeWidth="2"
+        android:pathData="M10,30 A20,20 0 1,1 50,30 A20,20 0 1,1 10,30 Z"
+        android:fillColor="#00000000" />
+    
+    <!-- Inner Circle -->
+    <path
+        android:strokeColor="@color/focus_green"
+        android:strokeWidth="2"
+        android:pathData="M20,30 A10,10 0 1,1 40,30 A10,10 0 1,1 20,30 Z"
+        android:fillColor="#00000000" />
+    
+    <!-- Crosshair Lines -->
+    <path
+        android:strokeColor="@color/white"
+        android:strokeWidth="1"
+        android:pathData="M30,15 L30,20 M30,40 L30,45 M15,30 L20,30 M40,30 L45,30" />
+        
+</vector>
