@@ -1,4 +1,4 @@
-name: Build APK # Workflow کا نام 
+name: Build Android APK # Workflow کا نام 
 on: 
   push: 
     branches: [ main ] # جب main branch پر push ہو 
@@ -18,22 +18,50 @@ jobs:
           java-version: '17' 
           distribution: 'temurin' 
            
-      - name: Create Gradle Wrapper Directory # gradle/wrapper folder بنائے گا 
-        run: mkdir -p gradle/wrapper 
- 
-      - name: Download gradle-wrapper.jar # gradle-wrapper.jar کو download کرے گا 
-        run: | 
-          curl -L -o gradle/wrapper/gradle-wrapper.jar https://services.gradle.org/distributions/gradle-8.5-wrapper.jar 
-           
-      - name: Make gradlew executable # gradlew script کو executable بنائے گا 
+      # یہ step یقینی بنائے گا کہ gradlew script executable ہے 
+      - name: Make gradlew executable 
         run: chmod +x gradlew 
          
+      # ⚠️ یہاں ہم نے gradle/wrapper folder اور gradle-wrapper.jar کی موجودگی کو چیک کرنے کا step شامل کیا ہے 
+      - name: Verify Gradle Wrapper Files # Gradle wrapper files کی موجودگی کی تصدیق کریں 
+        run: | 
+          echo "Checking for gradle/wrapper/ directory..." 
+          if [ -d "gradle/wrapper" ]; then 
+            echo "gradle/wrapper/ directory exists." 
+          else 
+            echo "gradle/wrapper/ directory does NOT exist. Creating it..." 
+            mkdir -p gradle/wrapper 
+          fi 
+ 
+          echo "Checking for gradle/wrapper/gradle-wrapper.jar..." 
+          if [ -f "gradle/wrapper/gradle-wrapper.jar" ]; then 
+            echo "gradle/wrapper/gradle-wrapper.jar already exists. Skipping download." 
+          else 
+            echo "gradle/wrapper/gradle-wrapper.jar NOT found. Downloading it..." 
+            # Official Gradle distribution URL से download کریں 
+            curl -L -o gradle/wrapper/gradle-wrapper.jar https://services.gradle.org/distributions/gradle-8.5-wrapper.jar 
+            if [ $? -eq 0 ]; then 
+              echo "gradle-wrapper.jar downloaded successfully." 
+            else 
+              echo "Error: Failed to download gradle-wrapper.jar. Please check the URL or network." 
+              exit 1 # अगर download failed हो तो workflow रोक दें 
+            fi 
+          fi 
+           
+      # ⚠️ ایک اور تصدیق تاکہ پتہ چلے کہ gradlew script اور jar فائل دونوں موجود ہیں 
+      - name: Debug: List Gradle Wrapper Files # یہ debug के लिए है, देखने के लिए कि फाइलें मौजूद हैं या नहीं 
+        run: | 
+          ls -l gradlew 
+          ls -l gradle/wrapper/gradle-wrapper.jar 
+ 
       - name: Build APK # Gradle build شروع کرے گا 
-        run: ./gradlew assembleDebug --no-daemon 
+        run: ./gradlew assembleDebug --no-daemon --stacktrace 
          
       - name: Upload APK # بنی ہوئی APK فائل کو Artifact کے طور پر upload کرے گا 
         uses: actions/upload-artifact@v4 
+      #  if: success() # सिर्फ़ तब upload करें जब build कामयाब हो 
         with: 
           name: Advanced-Camera-Pro-Debug-APK 
           path: app/build/outputs/apk/debug/*.apk 
+ 
 
