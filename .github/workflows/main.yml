@@ -5,6 +5,7 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:  # Manual trigger
 
 jobs:
   build:
@@ -20,16 +21,61 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
         
-    - name: Build APK
+    - name: Create gradlew if missing
       run: |
-        chmod +x ./gradlew
-        ./gradlew assembleDebug
-        ./gradlew assembleRelease
+        # Check if gradlew exists, if not create it
+        if [ ! -f "./gradlew" ]; then
+          echo "📝 Creating gradlew file..."
+          
+          # Create basic gradle wrapper files
+          cat > gradlew << 'EOF'
+#!/bin/sh
+# This is a simple gradlew replacement for GitHub Actions
+gradle "$@"
+EOF
+          
+          chmod +x ./gradlew
+          echo "✅ Created simple gradlew file"
+        else
+          chmod +x ./gradlew
+          echo "✅ gradlew already exists"
+        fi
         
-    - name: Upload APK
+    - name: Setup Android SDK
+      run: |
+        # Install Android SDK components
+        yes | sdkmanager "platforms;android-34"
+        yes | sdkmanager "build-tools;34.0.0"
+        yes | sdkmanager "platform-tools"
+        echo "✅ Android SDK setup complete"
+        
+    - name: Build Debug APK
+      run: |
+        ./gradlew assembleDebug || gradle assembleDebug
+        echo "✅ Debug APK built!"
+        
+    - name: Build Release APK  
+      run: |
+        ./gradlew assembleRelease || gradle assembleRelease
+        echo "✅ Release APK built!"
+        
+    - name: Upload Debug APK
       uses: actions/upload-artifact@v4
       with:
-        name: advanced-camera-pro-apk
-        path: |
-          app/build/outputs/apk/debug/
-          app/build/outputs/apk/release/
+        name: advanced-camera-debug
+        path: app/build/outputs/apk/debug/app-debug.apk
+        retention-days: 30
+        
+    - name: Upload Release APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: advanced-camera-release
+        path: app/build/outputs/apk/release/app-release.apk
+        retention-days: 30
+        
+    - name: Show build info
+      run: |
+        echo "🎉 Build Completed Successfully!"
+        echo "📱 Debug APK: advanced-camera-debug"
+        echo "🚀 Release APK: advanced-camera-release"
+        echo "📥 Download from GitHub Actions Artifacts"
