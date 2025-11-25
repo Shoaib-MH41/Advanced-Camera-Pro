@@ -26,7 +26,7 @@ jobs:
           curl -L https://services.gradle.org/distributions/gradle-8.5-all.zip -o gradle.zip
 
           # ✔ Correct path inside ZIP
-          unzip -p gradle.zip "gradle-8.5/lib/plugins/gradle-wrapper.jar" > gradle/wrapper/gradle-wrapper.jar
+          unzip -p gradle.zip "gradle-8.5/lib/gradle-wrapper.jar" > gradle/wrapper/gradle-wrapper.jar
 
           rm gradle.zip
 
