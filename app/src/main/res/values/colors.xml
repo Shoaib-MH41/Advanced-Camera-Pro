@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors -->
+    <color name="color_primary">#1A1A1A</color>
+    <color name="color_primary_dark">#121212</color>
+    <color name="color_accent">#FF6B35</color>
+    
+    <!-- Background Colors -->
+    <color name="background_dark">#0D0D0D</color>
+    <color name="background_semi_transparent">#801A1A1A</color>
+    <color name="background_controls">#CC1A1A1A</color>
+    
+    <!-- Text Colors -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B3B3B3</color>
+    <color name="text_accent">#FF6B35</color>
+    
+    <!-- Button Colors -->
+    <color name="button_capture_normal">#FF6B35</color>
+    <color name="button_capture_pressed">#E55A2B</color>
+    <color name="button_secondary">#333333</color>
+    
+    <!-- Status Colors -->
+    <color name="status_recording">#FF4444</color>
+    <color name="status_success">#4CAF50</color>
+    <color name="status_warning">#FF9800</color>
+    
+    <!-- SeekBar Colors -->
+    <color name="seekbar_track">#444444</color>
+    <color name="seekbar_progress">#FF6B35</color>
+    <color name="seekbar_thumb">#FFFFFF</color>
+    
+    <!-- Gradient Colors -->
+    <color name="gradient_start">#801A1A1A</color>
+    <color name="gradient_end">#001A1A1A</color>
+</resources>
