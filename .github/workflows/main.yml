@@ -18,23 +18,27 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # یہ 4 لائنیں خود سب کچھ ٹھیک کر دیں گی
-      - name: Fix Complete Gradle Wrapper (100% Working)
+      # -----------------------------------
+      # FIX: Correct Gradle Wrapper Jar Path
+      # -----------------------------------
+      - name: Fix Gradle Wrapper (Correct Path)
         run: |
           mkdir -p gradle/wrapper
-          curl -L https://services.gradle.org/distributions/gradle-8.5-all.zip -o gradle.zip
-          unzip -o gradle.zip gradle-8.5/gradle-wrapper.jar -d .
-          mv gradle-8.5/gradle-wrapper.jar gradle/wrapper/gradle-wrapper.jar
-          rm -rf gradle-8.5 gradle.zip
+          curl -L https://services.gradle.org/distributions/gradle-8.5-bin.zip -o gradle.zip
+
+          # extract from correct location
+          unzip -p gradle.zip "gradle-8.5/lib/plugins/gradle-wrapper.jar" > gradle/wrapper/gradle-wrapper.jar
+
+          rm gradle.zip
 
       - name: Make gradlew executable
         run: chmod +x gradlew
 
       - name: Build APK
-        run: ./gradlew assembleDebug --no-daemon --info
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Advanced-Camera-Pro-Debug-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/*.apk
