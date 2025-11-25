@@ -25,19 +25,25 @@ jobs:
         distribution: 'temurin'
 
     # -------------------------------------------------
-    # AUTO-GENERATE GRADLE WRAPPER IF MISSING
+    # AUTO-GENERATE WRAPPER (IF MISSING)
     # -------------------------------------------------
     - name: Generate Gradle Wrapper
       run: |
         if [ ! -f "./gradlew" ]; then
-          echo "Gradle wrapper missing — generating..."
           gradle wrapper --gradle-version 8.7
-        else
-          echo "Gradle wrapper already exists."
         fi
 
     - name: Make gradlew executable
       run: chmod +x gradlew
+
+    # -------------------------------------------------
+    # FIX: ALWAYS UPDATE JAR FILE
+    # -------------------------------------------------
+    - name: Download Latest Gradle Wrapper JAR
+      run: |
+        mkdir -p gradle/wrapper
+        curl -L -o gradle-8.7-bin.zip https://services.gradle.org/distributions/gradle-8.7-bin.zip
+        unzip -p gradle-8.7-bin.zip gradle-8.7/lib/gradle-wrapper.jar > gradle/wrapper/gradle-wrapper.jar
 
     # -------------------------------------------------
     # BUILD APK
@@ -45,9 +51,6 @@ jobs:
     - name: Build Debug APK
       run: ./gradlew assembleDebug --stacktrace
 
-    # -------------------------------------------------
-    # UPLOAD APK ARTIFACT
-    # -------------------------------------------------
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
