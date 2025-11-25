@@ -43,7 +43,7 @@ jobs:
       run: |
         mkdir -p gradle/wrapper
         curl -L -o gradle-8.7-bin.zip https://services.gradle.org/distributions/gradle-8.7-bin.zip
-        unzip -p gradle-8.7-bin.zip gradle-8.7/lib/gradle-wrapper.jar > gradle/wrapper/gradle-wrapper.jar
+        unzip -p gradle-8.7-bin.zip gradle-8.7/lib/plugins/gradle-wrapper.jar > gradle/wrapper/gradle-wrapper.jar
 
     # -------------------------------------------------
     # BUILD APK
