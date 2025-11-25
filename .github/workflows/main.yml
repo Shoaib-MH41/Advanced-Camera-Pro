@@ -1,4 +1,4 @@
-name: Android Build (Auto Gradle + Auto Wrapper)
+name: Android Build (Fixed Jar Issue)
 
 on:
   workflow_dispatch:
@@ -19,31 +19,31 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Install Gradle
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y gradle
-
-    - name: Generate Wrapper if missing
-      run: |
-        if [ ! -f "./gradlew" ]; then
-          gradle wrapper --gradle-version 8.7
-        fi
-
-    - name: Make gradlew executable
-      run: chmod +x gradlew
-
-    # -------------------------------
-    # FIX: Correct jar extraction path
-    # -------------------------------
-    - name: Update Gradle Wrapper JAR
+    - name: Create Gradle Wrapper Structure
       run: |
         mkdir -p gradle/wrapper
-        curl -L -o gradle-8.7-all.zip https://services.gradle.org/distributions/gradle-8.7-all.zip
-        unzip -p gradle-8.7-all.zip gradle-8.7/lib/gradle-wrapper.jar > gradle/wrapper/gradle-wrapper.jar
+        # Create wrapper properties
+        cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
+distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.7-all.zip
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+EOF
+
+        # Create simple gradlew script
+        cat > gradlew << 'EOF'
+#!/bin/sh
+# Simple gradlew that uses system gradle
+gradle "$@"
+EOF
+        chmod +x gradlew
+        echo "✅ Gradle wrapper structure created"
 
     - name: Build Debug APK
-      run: ./gradlew assembleDebug --stacktrace
+      run: |
+        # Use system gradle directly
+        gradle assembleDebug --stacktrace --no-daemon
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
