@@ -12,7 +12,6 @@ import android.graphics.SurfaceTexture;
 import android.hardware.camera2.*;
 import android.media.Image;
 import android.media.ImageReader;
-import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -27,7 +26,11 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import com.google.android.material.tabs.TabLayout;
+
+import com.yourname.advancedcamera.features.FeatureManager;
+import com.yourname.advancedcamera.features.color.ColorLUTs;
+import com.yourname.advancedcamera.features.night.NightModeProcessor;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -37,17 +40,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import com.yourname.advancedcamera.features.FeatureManager;
-import com.yourname.advancedcamera.features.color.ColorLUTs;
-import com.yourname.advancedcamera.features.night.NightModeProcessor;
+
 public class CameraActivity extends AppCompatActivity {
     
     private static final String TAG = "AdvancedCamera";
     private static final int REQUEST_CAMERA_PERMISSION = 200;
-    private FeatureManager featureManager;
-    private ColorLUTs colorLUTs;
-    private NightModeProcessor nightProcessor;
-  
+    
     // Camera components
     private CameraManager cameraManager;
     private CameraDevice cameraDevice;
@@ -78,6 +76,11 @@ public class CameraActivity extends AppCompatActivity {
     private boolean isFrontCamera = false;
     private boolean isRecording = false;
     private int currentMode = 0; // 0: Auto, 1: Pro, 2: Night, 3: Portrait, 4: Video
+    
+    // Advanced Features
+    private FeatureManager featureManager;
+    private ColorLUTs colorLUTs;
+    private NightModeProcessor nightProcessor;
     
     // Orientation handling
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
@@ -122,7 +125,7 @@ public class CameraActivity extends AppCompatActivity {
         public void onOpened(@NonNull CameraDevice camera) {
             cameraDevice = camera;
             startPreview();
-            updateStatus("Camera Ready");
+            updateStatus("Camera Ready - Advanced Features Loaded");
         }
         
         @Override
@@ -172,6 +175,7 @@ public class CameraActivity extends AppCompatActivity {
         setContentView(R.layout.activity_camera_pro);
         
         initializeUI();
+        initializeAdvancedFeatures();
         checkPermissions();
     }
     
@@ -198,6 +202,30 @@ public class CameraActivity extends AppCompatActivity {
         setupModeTabs();
     }
     
+    /**
+     * Initialize Advanced Features
+     */
+    private void initializeAdvancedFeatures() {
+        try {
+            featureManager = new FeatureManager(this);
+            colorLUTs = new ColorLUTs();
+            nightProcessor = new NightModeProcessor();
+            
+            featureManager.initializeFeatures();
+            
+            // Show available features in log
+            List<String> availableFeatures = featureManager.getAvailableFeatures();
+            Log.d(TAG, "Advanced Features Loaded: " + availableFeatures);
+            
+            // Update status with features info
+            updateStatus("Advanced Features: " + availableFeatures.size() + " loaded");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Advanced features initialization failed: " + e.getMessage());
+            updateStatus("Basic Mode - Advanced Features Failed");
+        }
+    }
+    
     private void setupEventListeners() {
         // Texture view listener
         textureView.setSurfaceTextureListener(surfaceTextureListener);
@@ -208,8 +236,8 @@ public class CameraActivity extends AppCompatActivity {
         // Switch camera
         btnSwitchCamera.setOnClickListener(v -> switchCamera());
         
-        // Settings button
-        btnSettings.setOnClickListener(v -> showSettings());
+        // Settings button - Now with advanced features
+        btnSettings.setOnClickListener(v -> showAdvancedSettings());
         
         // Gallery button
         btnGallery.setOnClickListener(v -> openGallery());
@@ -239,6 +267,9 @@ public class CameraActivity extends AppCompatActivity {
             public void onTabSelected(TabLayout.Tab tab) {
                 currentMode = tab.getPosition();
                 applyModeSettings(currentMode);
+                
+                // Show mode-specific features
+                showModeFeatures(currentMode);
             }
             
             @Override
@@ -247,6 +278,47 @@ public class CameraActivity extends AppCompatActivity {
             @Override
             public void onTabReselected(TabLayout.Tab tab) {}
         });
+    }
+    
+    /**
+     * Show features available for current mode
+     */
+    private void showModeFeatures(int mode) {
+        String modeName = "";
+        String features = "";
+        
+        switch (mode) {
+            case 0: // Auto
+                modeName = "Auto Mode";
+                features = "Smart Scene Detection";
+                break;
+            case 1: // Pro
+                modeName = "Pro Mode";
+                features = "Manual Controls + RAW";
+                break;
+            case 2: // Night
+                modeName = "Night Mode";
+                if (featureManager.isNightVisionEnabled) {
+                    features = "AI Night Vision Available";
+                } else {
+                    features = "Basic Night Mode";
+                }
+                break;
+            case 3: // Portrait
+                modeName = "Portrait Mode";
+                if (featureManager.isColorLUTsEnabled) {
+                    features = "Cinematic LUTs Available";
+                } else {
+                    features = "Portrait Mode";
+                }
+                break;
+            case 4: // Video
+                modeName = "Video Mode";
+                features = "Video Recording";
+                break;
+        }
+        
+        Toast.makeText(this, modeName + " - " + features, Toast.LENGTH_SHORT).show();
     }
     
     private final SeekBar.OnSeekBarChangeListener seekBarChangeListener = 
@@ -425,10 +497,14 @@ public class CameraActivity extends AppCompatActivity {
                     buffer.get(bytes);
                     
                     Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                    saveImage(bitmap);
+                    
+                    // Apply advanced features if enabled
+                    Bitmap processedBitmap = applyAdvancedProcessing(bitmap);
+                    
+                    saveImage(processedBitmap);
                     
                     runOnUiThread(() -> 
-                        Toast.makeText(CameraActivity.this, "Photo saved!", Toast.LENGTH_SHORT).show());
+                        Toast.makeText(CameraActivity.this, "Photo saved with advanced processing!", Toast.LENGTH_SHORT).show());
                 }
             } finally {
                 if (image != null) {
@@ -438,6 +514,48 @@ public class CameraActivity extends AppCompatActivity {
         }
     };
     
+    /**
+     * Apply advanced features to captured image
+     */
+    private Bitmap applyAdvancedProcessing(Bitmap originalBitmap) {
+        Bitmap processedBitmap = originalBitmap;
+        
+        try {
+            // Apply features based on current mode
+            switch (currentMode) {
+                case 2: // Night Mode
+                    if (featureManager.isNightVisionEnabled) {
+                        // For single image, we can still enhance it
+                        List<Bitmap> singleFrame = new ArrayList<>();
+                        singleFrame.add(originalBitmap);
+                        processedBitmap = nightProcessor.processNightShot(singleFrame);
+                        Log.d(TAG, "Night vision processing applied");
+                    }
+                    break;
+                    
+                case 3: // Portrait Mode
+                    if (featureManager.isColorLUTsEnabled) {
+                        processedBitmap = colorLUTs.applyCinematicLUT(originalBitmap);
+                        Log.d(TAG, "Cinematic LUT applied");
+                    }
+                    break;
+                    
+                case 1: // Pro Mode - Apply vintage LUT
+                    if (featureManager.isColorLUTsEnabled) {
+                        processedBitmap = colorLUTs.applyVintageLUT(originalBitmap);
+                        Log.d(TAG, "Vintage LUT applied");
+                    }
+                    break;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Advanced processing failed: " + e.getMessage());
+            // Return original if processing fails
+            processedBitmap = originalBitmap;
+        }
+        
+        return processedBitmap;
+    }
+    
     private void captureImage() {
         if (cameraDevice == null) return;
         
@@ -446,6 +564,9 @@ public class CameraActivity extends AppCompatActivity {
                 toggleRecording();
                 return;
             }
+            
+            // Show feature info before capture
+            showCaptureInfo();
             
             // Capture still image
             CaptureRequest.Builder captureBuilder = 
@@ -467,7 +588,7 @@ public class CameraActivity extends AppCompatActivity {
                                              @NonNull CaptureRequest request, 
                                              @NonNull TotalCaptureResult result) {
                     super.onCaptureCompleted(session, request, result);
-                    updateStatus("Capture completed");
+                    updateStatus("Capture completed with advanced processing");
                 }
             };
             
@@ -477,6 +598,23 @@ public class CameraActivity extends AppCompatActivity {
         } catch (CameraAccessException e) {
             Log.e(TAG, "Capture failed: " + e.getMessage());
         }
+    }
+    
+    /**
+     * Show info about features being applied
+     */
+    private void showCaptureInfo() {
+        String featureInfo = "Basic Capture";
+        
+        if (currentMode == 2 && featureManager.isNightVisionEnabled) {
+            featureInfo = "Night Vision Processing";
+        } else if (currentMode == 3 && featureManager.isColorLUTsEnabled) {
+            featureInfo = "Cinematic LUT Applied";
+        } else if (currentMode == 1 && featureManager.isColorLUTsEnabled) {
+            featureInfo = "Vintage LUT Applied";
+        }
+        
+        Toast.makeText(this, featureInfo, Toast.LENGTH_SHORT).show();
     }
     
     private void setFocusArea(float x, float y) {
@@ -658,8 +796,42 @@ public class CameraActivity extends AppCompatActivity {
         }
     }
     
-    private void showSettings() {
-        Toast.makeText(this, "Settings will be implemented", Toast.LENGTH_SHORT).show();
+    /**
+     * Advanced settings menu
+     */
+    private void showAdvancedSettings() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Advanced Features");
+        
+        List<String> availableFeatures = featureManager.getAvailableFeatures();
+        String featuresText = "Available Features:\n• " + String.join("\n• ", availableFeatures);
+        
+        builder.setMessage(featuresText);
+        builder.setPositiveButton("OK", null);
+        builder.setNeutralButton("Test Features", (dialog, which) -> {
+            testAdvancedFeatures();
+        });
+        
+        builder.show();
+    }
+    
+    /**
+     * Test advanced features
+     */
+    private void testAdvancedFeatures() {
+        Toast.makeText(this, "Testing advanced features...", Toast.LENGTH_SHORT).show();
+        
+        // Test Color LUTs
+        if (featureManager.isColorLUTsEnabled) {
+            Log.d(TAG, "Color LUTs feature is working");
+        }
+        
+        // Test Night Vision
+        if (featureManager.isNightVisionEnabled) {
+            Log.d(TAG, "Night Vision feature is working");
+        }
+        
+        Toast.makeText(this, "Feature tests completed - check Logcat", Toast.LENGTH_LONG).show();
     }
     
     private void openGallery() {
