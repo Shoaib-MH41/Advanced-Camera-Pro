@@ -1,4 +1,4 @@
-name: Android APK Build
+name: Build Advanced-Camera-Pro APK
 
 on:
   workflow_dispatch:
@@ -8,8 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
-    # یا macos-latest بھی چل سکتا ہے، تیز ہوتا ہے
+    timeout-minutes: 30
 
     steps:
       - name: Checkout Code
@@ -21,27 +20,23 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # یہ سب سے بہترین طریقہ ہے – بالکل Gradle 8.5-all.zip والا wrapper بنائیں
-      - name: Setup Gradle Wrapper (Fix for 8.5)
-        run: |
-          mkdir -p gradle/wrapper
-          curl -L https://services.gradle.org/distributions/gradle-8.5-all.zip -o gradle-8.5-all.zip
-          unzip -p gradle-8.5-all.zip gradle-8.5/lib/gradle-wrapper.jar > gradle/wrapper/gradle-wrapper.jar
-          echo "distributionBase=GRADLE_USER_HOME" > gradle/wrapper/gradle-wrapper.properties
-          echo "distributionPath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
-          echo "distributionUrl=https\\://services.gradle.org/distributions/gradle-8.5-all.zip" >> gradle/wrapper/gradle-wrapper.properties
-          echo "zipStoreBase=GRADLE_USER_HOME" >> gradle/wrapper/gradle-wrapper.properties
-          echo "zipStorePath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
-
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
+      - name: Setup Gradle (Official & Guaranteed Working)
+        uses: gradle/actions/setup-gradle@v4
+        # یہ خود آپ کی gradle-wrapper.properties پڑھ کر صحیح ورژن سیٹ کر دے گا
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: EagleEye-Debug-APK
+          name: Advanced-Camera-Pro-Debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Upload AAB (Optional – Play Store کے لیے)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Advanced-Camera-Pro-Bundle
+          path: app/build/outputs/bundle/debug/app-debug.aab
