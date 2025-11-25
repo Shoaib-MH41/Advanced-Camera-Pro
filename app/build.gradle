@@ -1,5 +1,6 @@
 plugins {
     id 'com.android.application'
+    id 'org.jetbrains.kotlin.android' version '1.9.20' apply false
 }
 
 android {
@@ -12,17 +13,9 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0.0"
-
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        // Enable camera2 API features
-        buildConfigField "boolean", "ENABLE_ADVANCED_FEATURES", "true"
-
-        // App version & camera config
-        buildConfigField "String", "APP_VERSION", "\"${versionName}\""
-        buildConfigField "int", "MAX_ZOOM_LEVEL", "20"
-
-        // Multi-dex
+        // Multi-dex if needed
         multiDexEnabled true
     }
 
@@ -31,18 +24,11 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-
-            buildConfigField "boolean", "ENABLE_LOGGING", "false"
-            buildConfigField "boolean", "ENABLE_ANALYTICS", "true"
         }
-
         debug {
             minifyEnabled false
             debuggable true
             applicationIdSuffix ".debug"
-
-            buildConfigField "boolean", "ENABLE_LOGGING", "true"
-            buildConfigField "boolean", "ENABLE_ANALYTICS", "false"
         }
     }
 
@@ -53,18 +39,8 @@ android {
 
     buildFeatures {
         viewBinding true
-        buildConfig true
-        compose false
     }
 
-    // APK splits
-    bundle {
-        language { enableSplit = true }
-        density { enableSplit = true }
-        abi { enableSplit = true }
-    }
-
-    // Exclude duplicate files
     packagingOptions {
         resources {
             excludes += [
@@ -73,80 +49,68 @@ android {
                 'META-INF/LICENSE.txt',
                 'META-INF/NOTICE',
                 'META-INF/NOTICE.txt',
-                'META-INF/INDEX.LIST',
-                'META-INF/io.netty.versions.properties',
-                'META-INF/proguard/androidx-annotations.pro'
-            ]
-            pickFirsts += [
-                'META-INF/kotlinx_coroutines_core.version'
+                'META-INF/INDEX.LIST'
             ]
         }
     }
 
-    // Lint
     lint {
         abortOnError false
         checkReleaseBuilds false
-        disable 'GradleDependency', 'OldTargetApi'
     }
 }
 
+// ----------------------
+// Toggle GPU usage here
+// ----------------------
+// If you want GPU delegates in app, set this to true and ensure CI installs NDK + CMake
+ext {
+    useGpu = false // <--- Set to true if you want tensorflow-lite-gpu and will install NDK in CI
+}
+
 dependencies {
-    // Android Core (Java versions)
+    // Android core
     implementation 'androidx.core:core:1.12.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.activity:activity:1.8.0'
-    implementation 'androidx.fragment:fragment:1.6.1'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel:2.6.2'
-    implementation 'androidx.lifecycle:lifecycle-livedata:2.6.2'
-    implementation 'androidx.lifecycle:lifecycle-runtime:2.6.2'
+    implementation 'com.google.android.material:material:1.10.0'
+    implementation 'androidx.recyclerview:recyclerview:1.3.1'
 
-    // CameraX (Java compatible)
+    // CameraX
     implementation 'androidx.camera:camera-core:1.3.0'
     implementation 'androidx.camera:camera-camera2:1.3.0'
     implementation 'androidx.camera:camera-lifecycle:1.3.0'
     implementation 'androidx.camera:camera-view:1.3.0'
-    implementation 'androidx.camera:camera-extensions:1.3.0'
     implementation 'androidx.camera:camera-video:1.3.0'
 
-    // Material Design
-    implementation 'com.google.android.material:material:1.10.0'
-    implementation 'androidx.recyclerview:recyclerview:1.3.1'
-    implementation 'androidx.cardview:cardview:1.0.0'
-
-    // Image Processing
+    // Image & utils
     implementation 'com.github.bumptech.glide:glide:4.15.1'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.15.1'
     implementation 'androidx.exifinterface:exifinterface:1.3.6'
-    implementation 'androidx.media:media:1.6.0'
-
-    // Permissions (Java)
-    implementation 'com.guolindev.permissionx:permissionx:1.7.1'
-
-    // Multi-dex
     implementation 'androidx.multidex:multidex:2.0.1'
-
-    // AI/ML (Java)
-    implementation 'org.tensorflow:tensorflow-lite:2.13.0'
-    implementation 'org.tensorflow:tensorflow-lite-gpu:2.13.0'
-    implementation 'org.tensorflow:tensorflow-lite-support:0.4.4'
-
-    // Utility
     implementation 'com.airbnb.android:lottie:6.1.0'
     implementation 'com.jakewharton.timber:timber:5.0.1'
 
-    // Network (optional)
+    // Network
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
     implementation 'com.squareup.okhttp3:logging-interceptor:4.11.0'
+
+    // TensorFlow Lite - core (CPU)
+    implementation 'org.tensorflow:tensorflow-lite:2.13.0'
+    implementation 'org.tensorflow:tensorflow-lite-support:0.4.4'
+
+    // Optional GPU - enabled when ext.useGpu == true
+    if (project.ext.useGpu == true) {
+        // GPU delegate (requires NDK in CI/environment)
+        implementation 'org.tensorflow:tensorflow-lite-gpu:2.13.0'
+        // If you use GPU delegate with NNAPI or GPU Delegate v2, extra artifacts may be needed.
+    } else {
+        // Keep only CPU runtime
+        // (No additional GPU dependency)
+    }
 
     // Testing
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
-    androidTestImplementation 'androidx.test:runner:1.5.2'
-    androidTestImplementation 'androidx.test:rules:1.5.0'
-
-    // Glide compiler (Java)
-    annotationProcessor 'com.github.bumptech.glide:compiler:4.15.1'
 }
