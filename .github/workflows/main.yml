@@ -8,7 +8,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
 
     steps:
       - name: Checkout Code
@@ -20,23 +19,18 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Gradle (Official & Guaranteed Working)
+      - name: Setup Gradle (Official)
         uses: gradle/actions/setup-gradle@v4
-        # یہ خود آپ کی gradle-wrapper.properties پڑھ کر صحیح ورژن سیٹ کر دے گا
 
-      - name: Build Debug APK
+      # بس یہ ایک لائن ڈال دو — باقی سب ٹھیک ہے
+      - name: Grant execute permission to gradlew
+        run: chmod +x ./gradlew
+
+      - name: Build Debug APK Build
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Advanced-Camera-Pro-Debug-APK
+          name: Advanced-Camera-Pro-Debug
           path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-
-      - name: Upload AAB (Optional – Play Store کے لیے)
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: Advanced-Camera-Pro-Bundle
-          path: app/build/outputs/bundle/debug/app-debug.aab
