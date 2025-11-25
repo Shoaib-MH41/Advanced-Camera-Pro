@@ -24,7 +24,7 @@ jobs:
       - name: Fix Gradle Wrapper (Correct Path)
         run: |
           mkdir -p gradle/wrapper
-          curl -L https://services.gradle.org/distributions/gradle-8.5-bin.zip -o gradle.zip
+          curl -L https://services.gradle.org/distributions/gradle-8.5-all.zip -o gradle.zip
 
           # extract from correct location
           unzip -p gradle.zip "gradle-8.5/lib/plugins/gradle-wrapper.jar" > gradle/wrapper/gradle-wrapper.jar
