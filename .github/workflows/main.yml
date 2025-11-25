@@ -1,3 +1,4 @@
+
 name: Android APK Build
 
 on:
@@ -10,53 +11,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repo
-      uses: actions/checkout@v3
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-    - name: Install Gradle (system)
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y gradle
-
-    - name: Setup JDK 17
-      uses: actions/setup-java@v3
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
 
-    # ----------------------------------------
-    # Generate wrapper if missing
-    # ----------------------------------------
-    - name: Generate Gradle Wrapper
+    # یہ سب سے بہترین اور مستحکم طریقہ ہے – سیدھا آفیشل wrapper ڈاؤن لوڈ کرو
+    - name: Download & Setup Gradle Wrapper (Most Reliable)
       run: |
-        if [ ! -f "./gradlew" ]; then
-          echo "Generating Gradle Wrapper..."
-          gradle wrapper --gradle-version 8.7
-        fi
+        curl -L -o gradle-8.7-bin.zip https://services.gradle.org/distributions/gradle-8.7-bin.zip
+        unzip -q gradle-8.7-bin.zip
+        mv gradle-8.7 gradle
+        mkdir -p gradle/wrapper
+        cp gradle/gradle-wrapper.jar gradle/wrapper/
+        cp gradle/gradle-wrapper.properties gradle/wrapper/
+        echo "./gradle/bin/gradle wrapper --gradle-version 8.7" >> $GITHUB_PATH
         chmod +x gradlew
 
-    # ----------------------------------------
-    # Fix gradle-wrapper.jar (100% working)
-    # ----------------------------------------
-    - name: Fix Gradle Wrapper JAR
-      run: |
-        mkdir -p gradle/wrapper
-        curl -L -o gradle.zip https://services.gradle.org/distributions/gradle-8.7-all.zip
-        JAR_PATH=$(unzip -l gradle.zip | grep "gradle-wrapper.jar" | awk '{print $4}')
-        unzip -p gradle.zip "$JAR_PATH" > gradle/wrapper/gradle-wrapper.jar
-        echo "Wrapper jar fixed."
+    # اگر آپ کے پروجیکٹ میں پہلے سے gradlew ہو تو یہ استعمال ہوگا، ورنہ اوپر والا چلے گا
+    - name: Make gradlew executable
+      run: chmod +x ./gradlew
 
-    # ----------------------------------------
-    # Build ONLY APK
-    # ----------------------------------------
     - name: Build Debug APK
-      run: ./gradlew assembleDebug --stacktrace
+      run: ./gradlew assembleDebug --stacktrace --no-daemon
 
-    # ----------------------------------------
-    # Upload APK
-    # ----------------------------------------
-    - name: Upload APK
+    - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: android-app-debug
-        path: app/build/outputs/apk/debug/*.apk
+        name: EagleEye-Debug-APK
+        path: app/build/outputs/apk/debug/app-debug.apk
+        if-no-files-found: error
