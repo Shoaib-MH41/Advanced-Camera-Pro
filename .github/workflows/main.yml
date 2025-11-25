@@ -19,18 +19,19 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Gradle (Official)
-        uses: gradle/actions/setup-gradle@v4
+      # یہ ایک لائن کا جادو ہے — باقی سب ہٹا دو
+      - name: Setup Gradle (Full Fix)
+        uses: gradle/gradle-build-action@v3
+        with:
+          gradle-version: wrapper
+          # یہ خود gradlew + wrapper.jar + properties سب ٹھیک کر دیتا ہے
 
-      # بس یہ ایک لائن ڈال دو — باقی سب ٹھیک ہے
-      - name: Grant execute permission to gradlew
-        run: chmod +x ./gradlew
-
-      - name: Build Debug APK Build
+      - name: Build Debug APK
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Advanced-Camera-Pro-Debug
+          name: Advanced-Camera-Pro-Debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
