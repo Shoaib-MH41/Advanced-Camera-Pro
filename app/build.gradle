@@ -1,6 +1,5 @@
 plugins {
     id 'com.android.application'
-    id 'org.jetbrains.kotlin.android' version '1.9.20' apply false
 }
 
 android {
@@ -14,8 +13,6 @@ android {
         versionCode 1
         versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-
-        // Multi-dex if needed
         multiDexEnabled true
     }
 
@@ -44,12 +41,11 @@ android {
     packagingOptions {
         resources {
             excludes += [
-                'META-INF/DEPENDENCIES',
                 'META-INF/LICENSE',
                 'META-INF/LICENSE.txt',
                 'META-INF/NOTICE',
                 'META-INF/NOTICE.txt',
-                'META-INF/INDEX.LIST'
+                'META-INF/DEPENDENCIES'
             ]
         }
     }
@@ -60,16 +56,13 @@ android {
     }
 }
 
-// ----------------------
-// Toggle GPU usage here
-// ----------------------
-// If you want GPU delegates in app, set this to true and ensure CI installs NDK + CMake
 ext {
-    useGpu = false // <--- Set to true if you want tensorflow-lite-gpu and will install NDK in CI
+    useGpu = false 
 }
 
 dependencies {
-    // Android core
+
+    // Android Core
     implementation 'androidx.core:core:1.12.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.10.0'
@@ -82,11 +75,13 @@ dependencies {
     implementation 'androidx.camera:camera-view:1.3.0'
     implementation 'androidx.camera:camera-video:1.3.0'
 
-    // Image & utils
+    // Image Utils
     implementation 'com.github.bumptech.glide:glide:4.15.1'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.15.1'
     implementation 'androidx.exifinterface:exifinterface:1.3.6'
     implementation 'androidx.multidex:multidex:2.0.1'
+
+    // Enhancements
     implementation 'com.airbnb.android:lottie:6.1.0'
     implementation 'com.jakewharton.timber:timber:5.0.1'
 
@@ -95,21 +90,16 @@ dependencies {
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
     implementation 'com.squareup.okhttp3:logging-interceptor:4.11.0'
 
-    // TensorFlow Lite - core (CPU)
+    // TensorFlow Lite (CPU only)
     implementation 'org.tensorflow:tensorflow-lite:2.13.0'
     implementation 'org.tensorflow:tensorflow-lite-support:0.4.4'
 
-    // Optional GPU - enabled when ext.useGpu == true
-    if (project.ext.useGpu == true) {
-        // GPU delegate (requires NDK in CI/environment)
+    // Optional GPU
+    if (project.ext.useGpu) {
         implementation 'org.tensorflow:tensorflow-lite-gpu:2.13.0'
-        // If you use GPU delegate with NNAPI or GPU Delegate v2, extra artifacts may be needed.
-    } else {
-        // Keep only CPU runtime
-        // (No additional GPU dependency)
     }
 
-    // Testing
+    // Tests
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
