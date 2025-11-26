@@ -20,27 +20,27 @@ jobs:
           distribution: 'temurin'
 
       - name: Setup Gradle Wrapper
-        run: |
-          gradle wrapper --gradle-version 8.6
+        run: gradle wrapper --gradle-version 8.6
 
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      - name: Fix Kotlin Plugin Version
+      # اب صرف اگر نہیں ہے تو ڈالے گا — دوبارہ نہیں ڈالے گا
+      - name: Add Kotlin Plugin Only If Missing
         run: |
-          # Kotlin پلگ ان کو صحیح ورژن کے ساتھ ڈال دیتے ہیں
-          sed -i '/plugins {/a \    id "org.jetbrains.kotlin.android" version "1.9.24"' app/build.gradle
+          if ! grep -q "org.jetbrains.kotlin.android.*version" app/build.gradle; then
+            sed -i '/plugins {/a\    id "org.jetbrains.kotlin.android" version "1.9.24"' app/build.gradle
+          fi
 
-      - name: Set JVM Target to 17 (Java + Kotlin)
+      - name: Set JVM Target 17
         run: |
-          # compileOptions اور kotlinOptions کو 17 پر سیٹ کر دیتے ہیں
-          sed -i '/compileOptions {/a \        sourceCompatibility JavaVersion.VERSION_17\n        targetCompatibility JavaVersion.VERSION_17' app/build.gradle
-          sed -i '/android {/a \    kotlinOptions {\n        jvmTarget = "17"\n    }' app/build.gradle
+          sed -i '/android {/a\    kotlinOptions {\n        jvmTarget = "17"\n    }' app/build.gradle || true
+          sed -i '/compileOptions {/a\        sourceCompatibility JavaVersion.VERSION_17\n        targetCompatibility JavaVersion.VERSION_17' app/build.gradle || true
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug --no-daemon --info
 
-      - name: Upload APK Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Advanced-Camera-Pro-Debug-APK
