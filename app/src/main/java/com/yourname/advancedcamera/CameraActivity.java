@@ -27,6 +27,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.google.android.material.tabs.TabLayout;
+import android.hardware.camera2.CameraCharacteristics.StreamConfigurationMap;
+import android.util.Range;
+import android.hardware.camera2.CameraMetadata;
+import android.hardware.camera2.params.MeteringRectangle;
 
 import com.yourname.advancedcamera.features.FeatureManager;
 import com.yourname.advancedcamera.features.color.ColorLUTs;
@@ -415,9 +419,7 @@ public class CameraActivity extends AppCompatActivity {
             }
             
             CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
-            StreamConfigurationMap map = characteristics.get(
-                CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-            
+            StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             if (map == null) {
                 updateStatus("Camera not supported");
                 return;
