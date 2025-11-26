@@ -19,29 +19,23 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # Gradle Wrapper کو بالکل صاف اور مستحکم ورژن سے دوبارہ بناتے ہیں
-      - name: Setup Gradle Wrapper (8.6 + Kotlin 1.9.24)
+      # صرف Gradle Wrapper Download — regenerate نہیں کرتے!
+      - name: Fix Gradle Wrapper (8.6)
         run: |
-          gradle wrapper --gradle-version 8.6
-          # Kotlin پلگ ان کا ورژن فکس کر دیا تاکہ کوئی HasConvention ایشو نہ آئے
-          sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.6-all.zip|' gradle/wrapper/gradle-wrapper.properties
+          mkdir -p gradle/wrapper
+          curl -L https://services.gradle.org/distributions/gradle-8.6-all.zip -o gradle.zip
+          unzip -jo gradle.zip "gradle-8.6/gradle/wrapper/gradle-wrapper.jar" -d gradle/wrapper
+          echo "distributionUrl=https\\://services.gradle.org/distributions/gradle-8.6-all.zip" > gradle/wrapper/gradle-wrapper.properties
+          rm gradle.zip
 
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      # Kotlin پلگ ان کا ورژن یہاں بھی فکس (اگر ضرورت پڑی)
-      - name: Ensure Kotlin Plugin Version
-        run: |
-          if ! grep -q "org.jetbrains.kotlin.android" app/build.gradle; then
-            sed -i '/plugins {/a\    id "org.jetbrains.kotlin.android" version "1.9.24" apply false' build.gradle
-            sed -i '/plugins {/a\    id "org.jetbrains.kotlin.android" version "1.9.24"' app/build.gradle
-          fi
-
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon --info
+      - name: Build APK
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Advanced-Camera-Pro-Debug-APK
+          name: ACP-Debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
