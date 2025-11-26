@@ -22,7 +22,7 @@ jobs:
       # 👉 Gradle Wrapper دوبارہ بناؤ (Project خود Gen کرے گا)
       - name: Regenerate Gradle Wrapper
         run: |
-          gradle wrapper --gradle-version 8.5
+          gradle wrapper --gradle-version 8.6
 
       - name: Make gradlew executable
         run: chmod +x gradlew
