@@ -43,6 +43,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+// 🔥 YEH NAYA IMPORT ADD KAR DIYA HAI
+import androidx.appcompat.app.AlertDialog;
+
 import com.google.android.material.tabs.TabLayout;
 
 import com.yourname.advancedcamera.features.FeatureManager;
