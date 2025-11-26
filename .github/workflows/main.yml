@@ -25,13 +25,6 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      # اب صرف اگر نہیں ہے تو ڈالے گا — دوبارہ نہیں ڈالے گا
-      - name: Add Kotlin Plugin Only If Missing
-        run: |
-          if ! grep -q "org.jetbrains.kotlin.android.*version" app/build.gradle; then
-            sed -i '/plugins {/a\    id "org.jetbrains.kotlin.android" version "1.9.24"' app/build.gradle
-          fi
-
       - name: Set JVM Target 17
         run: |
           sed -i '/android {/a\    kotlinOptions {\n        jvmTarget = "17"\n    }' app/build.gradle || true
