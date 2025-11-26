@@ -26,6 +26,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import com.google.android.material.tabs.TabLayout;
 
 import com.yourname.advancedcamera.features.FeatureManager;
 import com.yourname.advancedcamera.features.color.ColorLUTs;
