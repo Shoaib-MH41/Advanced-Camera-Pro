@@ -1,10 +1,12 @@
 plugins {
     id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
 }
 
 android {
     namespace 'com.yourname.advancedcamera'
     compileSdk 34
+    // باقی سب وہی رہے گا
 
     defaultConfig {
         applicationId "com.yourname.advancedcamera"
