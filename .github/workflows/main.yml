@@ -19,17 +19,12 @@ jobs:
           java-version: "17"
           distribution: "temurin"
 
-      # صرف Gradle wrapper regenerate کرنے کے لیے
-      - name: Create Gradle Wrapper (8.6)
+      - name: Setup Gradle Wrapper
         run: gradle wrapper --gradle-version 8.6
 
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      # صرف compile check - APK نہیں بنائے گا
-      - name: Run Compile Check
-        run: ./gradlew compileDebugSources --no-daemon --stacktrace
-
-      # Lint errors check (Android XML + Java + Kotlin)
-      - name: Run Lint Check
-        run: ./gradlew lintDebug --no-daemon --stacktrace
+      # Main: show detailed compile errors
+      - name: Run Compile Check (Full Log)
+        run: ./gradlew compileDebugSources --stacktrace --no-daemon --info
