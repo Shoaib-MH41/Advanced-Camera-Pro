@@ -6,29 +6,20 @@ import android.hardware.camera2.CameraManager
 import android.util.Log
 
 class FeatureManager(private val context: Context) {
-
+    
     companion object {
         private const val TAG = "FeatureManager"
     }
 
-    // یہ سب public ہیں تاکہ CameraActivity استعمال کر سکے
+    // 🔥 YEH VARIABLES PUBLIC KARO - 'public set' HATA DO
     var isNightVisionEnabled = false
-        public set
-
     var isColorLUTsEnabled = true
-        public set
-
     var isMotionDeblurEnabled = false
-        public set
-
     var isRawCaptureEnabled = false
-        public set
-
     var isUltraZoomEnabled = true
-        public set
-
     var isHDREnabled = false
-        public set
+
+}
 
     private val cameraCapabilities = mutableListOf<String>()
 
