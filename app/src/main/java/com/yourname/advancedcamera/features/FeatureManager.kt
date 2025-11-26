@@ -12,8 +12,8 @@ class FeatureManager(private val context: Context) {
     }
     
     // Feature flags
-    var isNightVisionEnabled = false
-    var isColorLUTsEnabled = false
+    var isNightVisionEnabled = true
+    var isColorLUTsEnabled = true
     var isMotionDeblurEnabled = false
     var isRawCaptureEnabled = false
     var isUltraZoomEnabled = false
