@@ -6,142 +6,82 @@ import android.hardware.camera2.CameraManager
 import android.util.Log
 
 class FeatureManager(private val context: Context) {
-    
+
     companion object {
         private const val TAG = "FeatureManager"
     }
-    
-    // Feature flags
-    var isNightVisionEnabled = true
+
+    // یہ سب public ہیں تاکہ CameraActivity استعمال کر سکے
+    var isNightVisionEnabled = false
+        public set
+
     var isColorLUTsEnabled = true
+        public set
+
     var isMotionDeblurEnabled = false
+        public set
+
     var isRawCaptureEnabled = false
-    var isUltraZoomEnabled = false
-    var isHDREnalbed = false
-    
-    // Feature capabilities
-    private var cameraCapabilities = mutableListOf<String>()
-    
+        public set
+
+    var isUltraZoomEnabled = true
+        public set
+
+    var isHDREnabled = false
+        public set
+
+    private val cameraCapabilities = mutableListOf<String>()
+
     fun initializeFeatures() {
         Log.d(TAG, "Initializing advanced features...")
-        
-        // Check camera capabilities
         checkCameraCapabilities()
-        
-        // Initialize features based on capabilities
+
         isNightVisionEnabled = checkNightVisionSupport()
-        isColorLUTsEnabled = true // Always enabled (software-based)
+        isColorLUTsEnabled = true
         isMotionDeblurEnabled = checkMotionDeblurSupport()
         isRawCaptureEnabled = checkRawCaptureSupport()
-        isUltraZoomEnabled = checkUltraZoomSupport()
-        isHDREnalbed = checkHDRSupport()
-        
-        Log.d(TAG, "Features initialized: ${getAvailableFeatures()}")
+        isUltraZoomEnabled = true
+        // software zoom
+        isHDREnabled = checkHDRSupport()
     }
-    
+
     fun getAvailableFeatures(): List<String> {
-        val features = mutableListOf<String>()
-        
-        if (isNightVisionEnabled) features.add("Night Vision")
-        if (isColorLUTsEnabled) features.add("Cinematic LUTs") 
-        if (isMotionDeblurEnabled) features.add("Motion Deblur")
-        if (isRawCaptureEnabled) features.add("RAW Capture")
-        if (isUltraZoomEnabled) features.add("Ultra Zoom")
-        if (isHDREnalbed) features.add("HDR Fusion")
-        
-        return features
+        val list = mutableListOf<String>()
+        if (isNightVisionEnabled) list.add("Night Vision")
+        if (isColorLUTsEnabled) list.add("Cinematic LUTs")
+        if (isMotionDeblurEnabled) list.add("Motion Deblur")
+        if (isRawCaptureEnabled) list.add("RAW Capture")
+        if (isUltraZoomEnabled) list.add("Ultra Zoom")
+        if (isHDREnabled) list.add("HDR Fusion")
+        return list
     }
-    
-    fun getFeatureStatus(): Map<String, Boolean> {
-        return mapOf(
-            "Night Vision" to isNightVisionEnabled,
-            "Cinematic LUTs" to isColorLUTsEnabled,
-            "Motion Deblur" to isMotionDeblurEnabled,
-            "RAW Capture" to isRawCaptureEnabled,
-            "Ultra Zoom" to isUltraZoomEnabled,
-            "HDR Fusion" to isHDREnalbed
-        )
-    }
-    
+
     private fun checkCameraCapabilities() {
         try {
             val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-            val cameraId = getBackCameraId(cameraManager)
-            
-            if (cameraId != null) {
-                val characteristics = cameraManager.getCameraCharacteristics(cameraId)
-                
-                // Check available capabilities
-                val capabilities = characteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)
-                capabilities?.forEach { capability ->
-                    when (capability) {
-                        CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_SENSOR -> 
-                            cameraCapabilities.add("Manual Sensor")
-                        CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_POST_PROCESSING -> 
-                            cameraCapabilities.add("Manual Processing")
-                        CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_RAW -> 
-                            cameraCapabilities.add("RAW")
-                        CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_BURST_CAPTURE -> 
-                            cameraCapabilities.add("Burst Capture")
-                    }
+            val cameraId = cameraManager.cameraIdList.firstOrNull {
+                cameraManager.getCameraCharacteristics(it)
+                    .get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_BACK
+            } ?: return
+
+            val caps = cameraManager.getCameraCharacteristics(cameraId)
+                .get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES) ?: return
+
+            caps.forEach { cap ->
+                when (cap) {
+                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_SENSOR -> cameraCapabilities.add("MANUAL_SENSOR")
+                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_POST_PROCESSING -> cameraCapabilities.add("MANUAL_POST")
+                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_RAW -> cameraCapabilities.add("RAW")
+                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_BURST_CAPTURE -> cameraCapabilities.add("BURST")
                 }
-                
-                Log.d(TAG, "Camera capabilities: $cameraCapabilities")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error checking camera capabilities: ${e.message}")
+            Log.e(TAG, "Capability check failed", e)
         }
     }
-    
-    private fun getBackCameraId(cameraManager: CameraManager): String? {
-        return try {
-            cameraManager.cameraIdList.firstOrNull { id ->
-                val characteristics = cameraManager.getCameraCharacteristics(id)
-                characteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_BACK
-            }
-        } catch (e: Exception) {
-            null
-        }
-    }
-    
-    private fun checkNightVisionSupport(): Boolean {
-        // Check if device has good low-light capabilities
-        return cameraCapabilities.contains("Manual Sensor") 
-    }
-    
-    private fun checkMotionDeblurSupport(): Boolean {
-        // Motion deblur requires burst capture capability
-        return cameraCapabilities.contains("Burst Capture")
-    }
-    
-    private fun checkRawCaptureSupport(): Boolean {
-        // Check RAW capability
-        return cameraCapabilities.contains("RAW")
-    }
-    
-    private fun checkUltraZoomSupport(): Boolean {
-        // Ultra zoom requires multiple cameras or high resolution sensor
-        return true // Software-based zoom is always available
-    }
-    
-    private fun checkHDRSupport(): Boolean {
-        // HDR requires manual control capabilities
-        return cameraCapabilities.contains("Manual Sensor")
-    }
-    
-    fun getCameraCapabilities(): List<String> {
-        return cameraCapabilities
-    }
-    
-    fun isFeatureAvailable(featureName: String): Boolean {
-        return when (featureName) {
-            "Night Vision" -> isNightVisionEnabled
-            "Cinematic LUTs" -> isColorLUTsEnabled
-            "Motion Deblur" -> isMotionDeblurEnabled
-            "RAW Capture" -> isRawCaptureEnabled
-            "Ultra Zoom" -> isUltraZoomEnabled
-            "HDR Fusion" -> isHDREnalbed
-            else -> false
-        }
-    }
+
+    private fun checkNightVisionSupport() = cameraCapabilities.contains("MANUAL_SENSOR")
+    private fun checkMotionDeblurSupport() = cameraCapabilities.contains("BURST")
+    private fun checkRawCaptureSupport() = cameraCapabilities.contains("RAW")
+    private fun checkHDRSupport() = cameraCapabilities.contains("MANUAL_SENSOR")
 }
