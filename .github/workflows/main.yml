@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
@@ -19,19 +19,29 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # 👉 Gradle Wrapper دوبارہ بناؤ (Project خود Gen کرے گا)
-      - name: Regenerate Gradle Wrapper
+      # Gradle Wrapper کو بالکل صاف اور مستحکم ورژن سے دوبارہ بناتے ہیں
+      - name: Setup Gradle Wrapper (8.6 + Kotlin 1.9.24)
         run: |
           gradle wrapper --gradle-version 8.6
+          # Kotlin پلگ ان کا ورژن فکس کر دیا تاکہ کوئی HasConvention ایشو نہ آئے
+          sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.6-all.zip|' gradle/wrapper/gradle-wrapper.properties
 
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      - name: Build APK
-        run: ./gradlew assembleDebug --no-daemon
+      # Kotlin پلگ ان کا ورژن یہاں بھی فکس (اگر ضرورت پڑی)
+      - name: Ensure Kotlin Plugin Version
+        run: |
+          if ! grep -q "org.jetbrains.kotlin.android" app/build.gradle; then
+            sed -i '/plugins {/a\    id "org.jetbrains.kotlin.android" version "1.9.24" apply false' build.gradle
+            sed -i '/plugins {/a\    id "org.jetbrains.kotlin.android" version "1.9.24"' app/build.gradle
+          fi
 
-      - name: Upload APK
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --no-daemon --info
+
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: debug-apk
+          name: Advanced-Camera-Pro-Debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
