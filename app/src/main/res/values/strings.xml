@@ -3,6 +3,10 @@
     <string name="app_name">Advanced Camera Pro</string>
     <string name="app_description">AI-Powered Camera with Advanced Features</string>
     
+    <!-- یہ دو لائنیں نئی شامل کی ہیں — ایشو فکس کرنے کے لیے -->
+    <string name="settings_title">Settings</string>
+    <string name="gallery_title">Gallery</string>
+    
     <!-- Status Messages -->
     <string name="camera_ready">Camera Ready - Advanced Features Loaded</string>
     <string name="camera_disconnected">Camera Disconnected</string>
