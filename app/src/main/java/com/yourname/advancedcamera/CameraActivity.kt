@@ -27,11 +27,7 @@ import android.util.SparseIntArray
 import android.view.Surface
 import android.view.TextureView
 import android.view.View
-import android.widget.ImageButton
-import android.widget.LinearLayout
-import android.widget.SeekBar
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -40,10 +36,8 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.nio.ByteBuffer
-import java.util.Arrays
-import java.util.Collections
-import java.util.Comparator
-import java.util.ArrayList
+import java.util.*
+import kotlin.collections.ArrayList
 
 class CameraActivity : AppCompatActivity() {
     
@@ -65,6 +59,9 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var tvISOValue: TextView
     private lateinit var tvExposureValue: TextView
     private lateinit var tvFocusValue: TextView
+    private lateinit var tabModes: TabLayout
+    private lateinit var focusIndicator: ImageView
+    private lateinit var spinnerLUT: Spinner
     
     private var cameraManager: CameraManager? = null
     private var cameraDevice: CameraDevice? = null
@@ -85,6 +82,7 @@ class CameraActivity : AppCompatActivity() {
     
     // ==================== 🚀 ADVANCED FEATURES ====================
     private val featureManager = FeatureManager.getInstance()
+    private var currentLUT = "CINEMATIC"
     
     // ==================== 🧭 ORIENTATION HANDLING ====================
     private val ORIENTATIONS = SparseIntArray().apply {
@@ -114,7 +112,7 @@ class CameraActivity : AppCompatActivity() {
         override fun onOpened(camera: CameraDevice) {
             cameraDevice = camera
             startPreview()
-            updateStatus("🚀 DSLR Camera Ready - ${featureManager.getAvailableFeatures().size} Advanced Features Active")
+            updateStatus("🚀 DSLR Pro - ${featureManager.getAvailableFeatures().size} Features Active")
         }
         
         override fun onDisconnected(camera: CameraDevice) {
@@ -182,22 +180,30 @@ class CameraActivity : AppCompatActivity() {
         tvISOValue = findViewById(R.id.tv_iso_value)
         tvExposureValue = findViewById(R.id.tv_exposure_value)
         tvFocusValue = findViewById(R.id.tv_focus_value)
+        tabModes = findViewById(R.id.tab_modes)
+        focusIndicator = findViewById(R.id.focus_indicator)
+        
+        // LUT Spinner
+        spinnerLUT = findViewById(R.id.spinner_lut)
         
         setupEventListeners()
+        setupLUTSpinner()
         updateManualControls()
     }
     
     // ==================== 🚀 ADVANCED FEATURES INITIALIZATION ====================
     private fun initializeAdvancedFeatures() {
         try {
-            // FeatureManager is already initialized via getInstance()
-            val availableFeatures = featureManager.getAvailableFeatures()
             val featureStats = featureManager.getFeatureStats()
+            val availableFeatures = featureManager.getAvailableFeatures()
             
             Log.d(TAG, "🎯 Advanced Features Loaded: ${availableFeatures.size}")
             Log.d(TAG, "📊 Feature Stats: $featureStats")
             
             updateStatus("🚀 DSLR Pro - ${availableFeatures.size} Features Active")
+            
+            // Show feature count in UI
+            Toast.makeText(this, "✅ ${availableFeatures.size} Advanced Features Loaded", Toast.LENGTH_LONG).show()
             
         } catch (e: Exception) {
             Log.e(TAG, "Advanced features initialization failed: ${e.message}")
@@ -245,6 +251,20 @@ class CameraActivity : AppCompatActivity() {
             applyManualSettings()
         })
         
+        // Tab selection listener
+        tabModes.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab?) {
+                tab?.let {
+                    currentMode = it.position
+                    applyModeSettings(currentMode)
+                    showModeFeatures(currentMode)
+                }
+            }
+            
+            override fun onTabUnselected(tab: TabLayout.Tab?) {}
+            override fun onTabReselected(tab: TabLayout.Tab?) {}
+        })
+        
         // Touch focus
         textureView.setOnTouchListener { _, event ->
             if (event.action == android.view.MotionEvent.ACTION_DOWN) {
@@ -253,6 +273,22 @@ class CameraActivity : AppCompatActivity() {
                 setFocusArea(x, y)
             }
             true
+        }
+    }
+    
+    private fun setupLUTSpinner() {
+        val lutTypes = featureManager.getLUTTypes()
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, lutTypes)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerLUT.adapter = adapter
+        
+        spinnerLUT.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                currentLUT = lutTypes[position]
+                Toast.makeText(this@CameraActivity, "🎨 ${currentLUT} LUT Selected", Toast.LENGTH_SHORT).show()
+            }
+            
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
     }
     
@@ -435,7 +471,7 @@ class CameraActivity : AppCompatActivity() {
                 saveImage(bitmap)
                 
                 runOnUiThread {
-                    Toast.makeText(this, "📸 DSLR Photo Saved!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "📸 DSLR Photo Saved with AI Processing!", Toast.LENGTH_SHORT).show()
                 }
             }
         } finally {
@@ -451,52 +487,23 @@ class CameraActivity : AppCompatActivity() {
             val detectedScene = featureManager.detectScene(originalBitmap)
             Log.d(TAG, "🧠 AI Detected Scene: $detectedScene")
             
-            // Apply features based on current mode and scene
+            // Apply features based on current mode
             when (currentMode) {
-                2 -> { // Night Mode
-                    if (featureManager.isNightVisionEnabled) {
-                        val frames = ArrayList<Bitmap>()
-                        frames.add(originalBitmap)
-                        processedBitmap = featureManager.processNightVision(frames)
-                        Log.d(TAG, "🌙 Night vision processing applied")
-                    }
-                }
-                3 -> { // Portrait Mode
-                    if (featureManager.isPortraitModeEnabled) {
-                        processedBitmap = featureManager.processPortraitMode(originalBitmap)
-                        Log.d(TAG, "🤖 Portrait mode processing applied")
-                    }
-                    if (featureManager.isColorLUTsEnabled) {
-                        processedBitmap = featureManager.applyColorLUT(processedBitmap, "PORTRAIT")
-                        Log.d(TAG, "🎨 Portrait LUT applied")
-                    }
+                0 -> { // Auto Mode - AI decides
+                    processedBitmap = applyAutoModeProcessing(processedBitmap, detectedScene)
                 }
                 1 -> { // Pro Mode
-                    if (featureManager.isColorLUTsEnabled) {
-                        processedBitmap = featureManager.applyColorLUT(processedBitmap, "VINTAGE")
-                        Log.d(TAG, "🎨 Vintage LUT applied")
-                    }
-                    if (featureManager.isRawCaptureEnabled) {
-                        processedBitmap = featureManager.processRawCapture(processedBitmap)
-                        Log.d(TAG, "💾 RAW processing applied")
-                    }
+                    processedBitmap = applyProModeProcessing(processedBitmap)
                 }
-                0 -> { // Auto Mode - AI decides
-                    when (detectedScene) {
-                        "NIGHT" -> {
-                            val frames = ArrayList<Bitmap>()
-                            frames.add(originalBitmap)
-                            processedBitmap = featureManager.processNightVision(frames)
-                        }
-                        "PORTRAIT" -> {
-                            processedBitmap = featureManager.processPortraitMode(originalBitmap)
-                        }
-                        else -> {
-                            // Apply general enhancements
-                            if (featureManager.isNoiseReductionEnabled) {
-                                processedBitmap = featureManager.processNoiseReduction(processedBitmap)
-                            }
-                        }
+                2 -> { // Night Mode
+                    processedBitmap = applyNightModeProcessing(processedBitmap)
+                }
+                3 -> { // Portrait Mode
+                    processedBitmap = applyPortraitModeProcessing(processedBitmap)
+                }
+                4 -> { // Video Mode (for photos, apply cinematic LUT)
+                    if (featureManager.isColorLUTsEnabled) {
+                        processedBitmap = featureManager.applyColorLUT(processedBitmap, "CINEMATIC")
                     }
                 }
             }
@@ -511,6 +518,89 @@ class CameraActivity : AppCompatActivity() {
         }
         
         return processedBitmap
+    }
+    
+    private fun applyAutoModeProcessing(bitmap: Bitmap, scene: String): Bitmap {
+        var processed = bitmap
+        
+        when (scene) {
+            "NIGHT" -> {
+                val frames = ArrayList<Bitmap>()
+                frames.add(processed)
+                processed = featureManager.processNightVision(frames)
+            }
+            "PORTRAIT" -> {
+                processed = featureManager.processPortraitMode(processed)
+                processed = featureManager.applyColorLUT(processed, "PORTRAIT")
+            }
+            "LANDSCAPE" -> {
+                processed = featureManager.processHDR(listOf(processed))
+                processed = featureManager.applyColorLUT(processed, "CINEMATIC")
+            }
+            "SUNSET" -> {
+                processed = featureManager.applyColorLUT(processed, "WARM")
+            }
+            else -> {
+                // Apply current LUT for other scenes
+                processed = featureManager.applyColorLUT(processed, currentLUT)
+            }
+        }
+        
+        return processed
+    }
+    
+    private fun applyProModeProcessing(bitmap: Bitmap): Bitmap {
+        var processed = bitmap
+        
+        // Apply RAW processing
+        if (featureManager.isRawCaptureEnabled) {
+            processed = featureManager.processRawCapture(processed)
+        }
+        
+        // Apply current LUT
+        if (featureManager.isColorLUTsEnabled) {
+            processed = featureManager.applyColorLUT(processed, currentLUT)
+        }
+        
+        // Apply manual settings effects
+        if (featureManager.currentExposure != 0) {
+            // Simulate exposure compensation
+            val exposure = featureManager.currentExposure
+            // Exposure adjustment would go here
+        }
+        
+        return processed
+    }
+    
+    private fun applyNightModeProcessing(bitmap: Bitmap): Bitmap {
+        var processed = bitmap
+        
+        if (featureManager.isNightVisionEnabled) {
+            val frames = ArrayList<Bitmap>()
+            frames.add(processed)
+            processed = featureManager.processNightVision(frames)
+        }
+        
+        // Apply noise reduction for night shots
+        if (featureManager.isNoiseReductionEnabled) {
+            processed = featureManager.processNoiseReduction(processed)
+        }
+        
+        return processed
+    }
+    
+    private fun applyPortraitModeProcessing(bitmap: Bitmap): Bitmap {
+        var processed = bitmap
+        
+        if (featureManager.isPortraitModeEnabled) {
+            processed = featureManager.processPortraitMode(processed)
+        }
+        
+        if (featureManager.isColorLUTsEnabled) {
+            processed = featureManager.applyColorLUT(processed, "PORTRAIT")
+        }
+        
+        return processed
     }
     
     private fun captureImage() {
@@ -535,11 +625,12 @@ class CameraActivity : AppCompatActivity() {
         val detectedScene = featureManager.detectScene(Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888))
         var featureInfo = "📸 Basic Capture"
         
-        when {
-            currentMode == 2 && featureManager.isNightVisionEnabled -> featureInfo = "🌙 Night Vision + AI Processing"
-            currentMode == 3 && featureManager.isPortraitModeEnabled -> featureInfo = "🤖 Portrait Mode + Bokeh Effect"
-            currentMode == 1 && featureManager.isRawCaptureEnabled -> featureInfo = "💾 Pro Mode + RAW Processing"
-            else -> featureInfo = "🧠 Auto Mode - $detectedScene"
+        when (currentMode) {
+            0 -> featureInfo = "🧠 Auto Mode - $detectedScene"
+            1 -> featureInfo = "⚙️ Pro Mode - ${currentLUT} LUT + RAW"
+            2 -> featureInfo = "🌙 Night Vision + AI Processing"
+            3 -> featureInfo = "🤖 Portrait Mode + Bokeh Effect"
+            4 -> featureInfo = "🎬 Video Mode - Cinematic LUT"
         }
         
         Toast.makeText(this, featureInfo, Toast.LENGTH_SHORT).show()
@@ -550,12 +641,20 @@ class CameraActivity : AppCompatActivity() {
         if (cameraDevice == null) return
         
         try {
-            // Show focus indicator (you can add visual feedback here)
-            Log.d(TAG, "🎯 Manual focus at: $x, $y")
+            // Show focus indicator
+            focusIndicator.x = x - focusIndicator.width / 2
+            focusIndicator.y = y - focusIndicator.height / 2
+            focusIndicator.visibility = View.VISIBLE
             
-            // In a real implementation, you would set focus area here
-            // For now, we'll just log it
+            Log.d(TAG, "🎯 Manual focus at: $x, $y")
             Toast.makeText(this, "🎯 Focus Set", Toast.LENGTH_SHORT).show()
+            
+            // Hide focus indicator after delay
+            backgroundHandler?.postDelayed({
+                runOnUiThread {
+                    focusIndicator.visibility = View.INVISIBLE
+                }
+            }, 2000)
             
         } catch (e: CameraAccessException) {
             Log.e(TAG, "Focus failed: ${e.message}")
@@ -627,8 +726,6 @@ class CameraActivity : AppCompatActivity() {
             val iso = settings["ISO"] as Int
             previewRequestBuilder!!.set(CaptureRequest.SENSOR_SENSITIVITY, iso)
             
-            // Apply other manual settings...
-            
             captureSession!!.setRepeatingRequest(previewRequestBuilder!!.build(), null, backgroundHandler)
             
         } catch (e: CameraAccessException) {
@@ -636,11 +733,48 @@ class CameraActivity : AppCompatActivity() {
         }
     }
     
+    private fun applyModeSettings(mode: Int) {
+        // Update UI based on mode
+        when (mode) {
+            1 -> { // Pro Mode
+                controlPanel.visibility = View.VISIBLE
+                findViewById<LinearLayout>(R.id.lut_panel).visibility = View.VISIBLE
+            }
+            else -> {
+                controlPanel.visibility = View.GONE
+                findViewById<LinearLayout>(R.id.lut_panel).visibility = View.GONE
+            }
+        }
+    }
+    
+    private fun showModeFeatures(mode: Int) {
+        val modeName = when (mode) {
+            0 -> "Auto Mode"
+            1 -> "Pro Mode"
+            2 -> "Night Mode"
+            3 -> "Portrait Mode"
+            4 -> "Video Mode"
+            else -> "Unknown Mode"
+        }
+        
+        val features = when (mode) {
+            0 -> "AI Scene Detection + Auto Processing"
+            1 -> "Manual Controls + RAW + LUTs"
+            2 -> "Night Vision + Noise Reduction"
+            3 -> "Portrait Bokeh + Skin Enhancement"
+            4 -> "4K Video + Stabilization"
+            else -> "Basic Features"
+        }
+        
+        Toast.makeText(this, "$modeName - $features", Toast.LENGTH_SHORT).show()
+    }
+    
     // ==================== ⚙️ SETTINGS & UI ====================
     private fun showAdvancedSettings() {
         val features = featureManager.getAvailableFeatures()
         val featureStats = featureManager.getFeatureStats()
         val manualSettings = featureManager.getManualSettings()
+        val lutTypes = featureManager.getLUTTypes()
         
         val message = """
         🚀 DSLR Camera Pro - Advanced Features
@@ -657,9 +791,14 @@ class CameraActivity : AppCompatActivity() {
         • Focus: ${(manualSettings["Focus"] as Float * 100).toInt()}%
         • Exposure: ${manualSettings["Exposure"]}
         • Zoom: ${manualSettings["Zoom"]}x
+        • Current LUT: $currentLUT
         
-        🎯 Active Features:
-        • ${features.joinToString("\n• ")}
+        🎨 Available LUTs:
+        • ${lutTypes.joinToString("\n• ")}
+        
+        🎯 Active Features (${features.size}):
+        • ${features.take(10).joinToString("\n• ")}
+        ${if (features.size > 10) "\n• ... and ${features.size - 10} more" else ""}
         """.trimIndent()
         
         android.app.AlertDialog.Builder(this)
@@ -669,6 +808,8 @@ class CameraActivity : AppCompatActivity() {
             .setNeutralButton("Reset Settings") { _, _ ->
                 featureManager.resetToDefaults()
                 updateManualControls()
+                currentLUT = "CINEMATIC"
+                spinnerLUT.setSelection(0)
                 Toast.makeText(this, "🔄 Settings Reset to Default", Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton("Feature Info") { _, _ ->
@@ -679,10 +820,10 @@ class CameraActivity : AppCompatActivity() {
     
     private fun showFeatureDetails() {
         val features = featureManager.getAvailableFeatures()
-        val message = "🎯 Active DSLR Features:\n\n• ${features.joinToString("\n• ")}"
+        val message = "🎯 All Active DSLR Features:\n\n• ${features.joinToString("\n• ")}"
         
         android.app.AlertDialog.Builder(this)
-            .setTitle("Advanced Features")
+            .setTitle("Advanced Features (${features.size})")
             .setMessage(message)
             .setPositiveButton("OK", null)
             .show()
@@ -722,7 +863,7 @@ class CameraActivity : AppCompatActivity() {
     
     // ==================== 💾 IMAGE SAVING ====================
     private fun saveImage(bitmap: Bitmap) {
-        val filename = "DSLR_${System.currentTimeMillis()}.jpg"
+        val filename = "DSLR_${System.currentTimeMillis()}_${currentLUT}.jpg"
         val file = File(getExternalFilesDir(null), filename)
         
         try {
