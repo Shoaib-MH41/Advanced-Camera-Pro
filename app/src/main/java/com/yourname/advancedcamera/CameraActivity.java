@@ -42,8 +42,6 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-
-// 🔥 YEH NAYA IMPORT ADD KAR DIYA HAI
 import androidx.appcompat.app.AlertDialog;
 
 import com.google.android.material.tabs.TabLayout;
@@ -321,7 +319,8 @@ public class CameraActivity extends AppCompatActivity {
                 break;
             case 2: // Night
                 modeName = "Night Mode";
-                if (featureManager.isNightVisionEnabled) {
+                // ✅ CORRECTED: Use getter methods instead of direct field access
+                if (featureManager.getIsNightVisionEnabled()) {
                     features = "AI Night Vision Available";
                 } else {
                     features = "Basic Night Mode";
@@ -329,7 +328,8 @@ public class CameraActivity extends AppCompatActivity {
                 break;
             case 3: // Portrait
                 modeName = "Portrait Mode";
-                if (featureManager.isColorLUTsEnabled) {
+                // ✅ CORRECTED: Use getter methods instead of direct field access
+                if (featureManager.getIsColorLUTsEnabled()) {
                     features = "Cinematic LUTs Available";
                 } else {
                     features = "Portrait Mode";
@@ -491,17 +491,41 @@ public class CameraActivity extends AppCompatActivity {
     }
     
     private void setupImageReader() {
-        Size[] outputSizes = cameraManager.getCameraCharacteristics(cameraId)
-            .get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
-            .getOutputSizes(ImageFormat.JPEG);
-        
-        Size largest = Collections.max(Arrays.asList(outputSizes), 
-            new CompareSizesByArea());
-        
-        imageReader = ImageReader.newInstance(largest.getWidth(), largest.getHeight(),
-            ImageFormat.JPEG, 1);
-        
-        imageReader.setOnImageAvailableListener(imageAvailableListener, backgroundHandler);
+        try {
+            // ✅ CORRECTED: Added try-catch for CameraAccessException
+            CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
+            StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+            
+            if (map == null) {
+                Log.e(TAG, "StreamConfigurationMap is null");
+                return;
+            }
+            
+            Size[] outputSizes = map.getOutputSizes(ImageFormat.JPEG);
+            
+            if (outputSizes == null || outputSizes.length == 0) {
+                Log.e(TAG, "No JPEG output sizes available");
+                return;
+            }
+            
+            Size largest = Collections.max(Arrays.asList(outputSizes), 
+                new CompareSizesByArea());
+            
+            imageReader = ImageReader.newInstance(largest.getWidth(), largest.getHeight(),
+                ImageFormat.JPEG, 1);
+            
+            imageReader.setOnImageAvailableListener(imageAvailableListener, backgroundHandler);
+            
+        } catch (CameraAccessException e) {
+            Log.e(TAG, "Failed to setup image reader: " + e.getMessage());
+            // Fallback to default size
+            try {
+                imageReader = ImageReader.newInstance(1920, 1080, ImageFormat.JPEG, 1);
+                imageReader.setOnImageAvailableListener(imageAvailableListener, backgroundHandler);
+            } catch (Exception ex) {
+                Log.e(TAG, "Fallback image reader also failed: " + ex.getMessage());
+            }
+        }
     }
     
     private final ImageReader.OnImageAvailableListener imageAvailableListener = 
@@ -545,7 +569,8 @@ public class CameraActivity extends AppCompatActivity {
             // Apply features based on current mode
             switch (currentMode) {
                 case 2: // Night Mode
-                    if (featureManager.isNightVisionEnabled) {
+                    // ✅ CORRECTED: Use getter method
+                    if (featureManager.getIsNightVisionEnabled()) {
                         // For single image, we can still enhance it
                         List<Bitmap> singleFrame = new ArrayList<>();
                         singleFrame.add(originalBitmap);
@@ -555,14 +580,16 @@ public class CameraActivity extends AppCompatActivity {
                     break;
                     
                 case 3: // Portrait Mode
-                    if (featureManager.isColorLUTsEnabled) {
+                    // ✅ CORRECTED: Use getter method
+                    if (featureManager.getIsColorLUTsEnabled()) {
                         processedBitmap = colorLUTs.applyCinematicLUT(originalBitmap);
                         Log.d(TAG, "Cinematic LUT applied");
                     }
                     break;
                     
                 case 1: // Pro Mode - Apply vintage LUT
-                    if (featureManager.isColorLUTsEnabled) {
+                    // ✅ CORRECTED: Use getter method
+                    if (featureManager.getIsColorLUTsEnabled()) {
                         processedBitmap = colorLUTs.applyVintageLUT(originalBitmap);
                         Log.d(TAG, "Vintage LUT applied");
                     }
@@ -627,11 +654,12 @@ public class CameraActivity extends AppCompatActivity {
     private void showCaptureInfo() {
         String featureInfo = "Basic Capture";
         
-        if (currentMode == 2 && featureManager.isNightVisionEnabled) {
+        // ✅ CORRECTED: All uses of featureManager variables now use getter methods
+        if (currentMode == 2 && featureManager.getIsNightVisionEnabled()) {
             featureInfo = "Night Vision Processing";
-        } else if (currentMode == 3 && featureManager.isColorLUTsEnabled) {
+        } else if (currentMode == 3 && featureManager.getIsColorLUTsEnabled()) {
             featureInfo = "Cinematic LUT Applied";
-        } else if (currentMode == 1 && featureManager.isColorLUTsEnabled) {
+        } else if (currentMode == 1 && featureManager.getIsColorLUTsEnabled()) {
             featureInfo = "Vintage LUT Applied";
         }
         
@@ -842,13 +870,14 @@ public class CameraActivity extends AppCompatActivity {
     private void testAdvancedFeatures() {
         Toast.makeText(this, "Testing advanced features...", Toast.LENGTH_SHORT).show();
         
+        // ✅ CORRECTED: Use getter methods
         // Test Color LUTs
-        if (featureManager.isColorLUTsEnabled) {
+        if (featureManager.getIsColorLUTsEnabled()) {
             Log.d(TAG, "Color LUTs feature is working");
         }
         
         // Test Night Vision
-        if (featureManager.isNightVisionEnabled) {
+        if (featureManager.getIsNightVisionEnabled()) {
             Log.d(TAG, "Night Vision feature is working");
         }
         
