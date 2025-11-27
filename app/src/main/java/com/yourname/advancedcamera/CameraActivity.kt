@@ -31,6 +31,7 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.android.material.tabs.TabLayout
 import com.yourname.advancedcamera.features.FeatureManager
 import java.io.File
 import java.io.FileOutputStream
@@ -39,15 +40,8 @@ import java.nio.ByteBuffer
 import java.util.*
 import kotlin.collections.ArrayList
 
-// اضافی imports
-import com.google.android.material.tabs.TabLayout
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
-import android.widget.Spinner
-
 class CameraActivity : AppCompatActivity() {
-
-}
+    
     // ==================== 🎥 CAMERA COMPONENTS ====================
     private lateinit var textureView: TextureView
     private lateinit var btnCapture: ImageButton
@@ -569,13 +563,6 @@ class CameraActivity : AppCompatActivity() {
             processed = featureManager.applyColorLUT(processed, currentLUT)
         }
         
-        // Apply manual settings effects
-        if (featureManager.currentExposure != 0) {
-            // Simulate exposure compensation
-            val exposure = featureManager.currentExposure
-            // Exposure adjustment would go here
-        }
-        
         return processed
     }
     
@@ -906,7 +893,7 @@ class CameraActivity : AppCompatActivity() {
     }
     
     // ==================== 🛠️ UTILITY CLASSES ====================
-        private fun chooseOptimalSize(choices: Array<Size>, width: Int, height: Int): Size {
+    private fun chooseOptimalSize(choices: Array<Size>, width: Int, height: Int): Size {
         val bigEnough = ArrayList<Size>()
         
         for (option in choices) {
@@ -921,6 +908,7 @@ class CameraActivity : AppCompatActivity() {
         } else {
             choices[0]
         }
+    }
     
     internal class CompareSizesByArea : Comparator<Size> {
         override fun compare(lhs: Size, rhs: Size): Int {
