@@ -3,49 +3,217 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_camera_gradient">
+    android:background="#000000">
 
-    <!-- Camera Preview -->
+    <!-- 🎥 Camera Preview -->
     <TextureView
         android:id="@+id/texture_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Top Bar -->
+    <!-- 📊 Status Bar -->
     <LinearLayout
-        android:id="@+id/top_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/bg_top_bar"
         android:orientation="horizontal"
-        android:padding="16dp">
-
-        <ImageButton
-            android:id="@+id/btn_settings"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="@drawable/ripple_effect"
-            android:src="@drawable/ic_settings_modern"
-            android:contentDescription="Settings" />
+        android:background="#80000000"
+        android:padding="12dp">
 
         <TextView
             android:id="@+id/tv_status"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:gravity="center"
-            android:text="Camera Ready"
+            android:text="DSLR Camera Pro - Ready"
             android:textColor="#FFFFFF"
             android:textSize="14sp"
             android:textStyle="bold" />
 
-        <ImageButton
-            android:id="@+id/btn_switch_camera"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="@drawable/ripple_effect"
-            android:src="@drawable/ic_switch_camera_modern"
-            android:contentDescription="Switch Camera" />
+        <TextView
+            android:id="@+id/recording_indicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="● REC"
+            android:textColor="#FF0000"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+    <!-- 🎛️ Manual Controls Panel -->
+    <LinearLayout
+        android:id="@+id/control_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="vertical"
+        android:background="#80000000"
+        android:padding="16dp">
+
+        <!-- Zoom Control -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔍 Zoom"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:layout_marginEnd="8dp" />
+
+            <SeekBar
+                android:id="@+id/seek_zoom"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:max="100"
+                android:progress="0" />
+
+            <TextView
+                android:id="@+id/tv_zoom_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1x"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:layout_marginStart="8dp" />
+
+        </LinearLayout>
+
+        <!-- Manual Controls Row 1 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⚙️ ISO"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:layout_marginEnd="8dp" />
+
+            <SeekBar
+                android:id="@+id/seek_iso"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:max="6400"
+                android:progress="100" />
+
+            <TextView
+                android:id="@+id/tv_iso_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="100"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:layout_marginStart="8dp" />
+
+        </LinearLayout>
+
+        <!-- Manual Controls Row 2 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⏱️ Expo"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:layout_marginEnd="8dp" />
+
+            <SeekBar
+                android:id="@+id/seek_exposure"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:max="6"
+                android:progress="3" />
+
+            <TextView
+                android:id="@+id/tv_exposure_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:layout_marginStart="8dp" />
+
+        </LinearLayout>
+
+        <!-- Bottom Button Bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="8dp">
+
+            <!-- Gallery Button -->
+            <ImageButton
+                android:id="@+id/btn_gallery"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@android:color/transparent"
+                android:src="@android:drawable/ic_menu_gallery"
+                android:layout_marginEnd="16dp"
+                android:contentDescription="Gallery" />
+
+            <!-- Mode Switch Button -->
+            <ImageButton
+                android:id="@+id/btn_mode_switch"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@android:color/transparent"
+                android:src="@android:drawable/ic_menu_camera"
+                android:layout_marginEnd="16dp"
+                android:contentDescription="Switch Mode" />
+
+            <!-- Main Capture Button -->
+            <ImageButton
+                android:id="@+id/btn_capture"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:background="@drawable/btn_capture_modern"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:contentDescription="Capture" />
+
+            <!-- Switch Camera Button -->
+            <ImageButton
+                android:id="@+id/btn_switch_camera"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@android:color/transparent"
+                android:src="@android:drawable/ic_menu_camera"
+                android:layout_marginStart="16dp"
+                android:contentDescription="Switch Camera" />
+
+            <!-- Settings Button -->
+            <ImageButton
+                android:id="@+id/btn_settings"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@android:color/transparent"
+                android:src="@android:drawable/ic_menu_preferences"
+                android:layout_marginStart="16dp"
+                android:contentDescription="Settings" />
+
+        </LinearLayout>
 
     </LinearLayout>
 
@@ -54,177 +222,47 @@
         android:id="@+id/tab_modes"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/top_bar"
-        android:background="@drawable/bg_top_bar"
-        app:tabBackground="@drawable/tab_background_selector"
-        app:tabTextColor="#80FFFFFF"
-        app:tabSelectedTextColor="#FFFFFF"
-        app:tabIndicatorHeight="0dp">
+        android:layout_above="@id/control_panel"
+        android:background="#80000000"
+        app:tabTextColor="#FFFFFF"
+        app:tabSelectedTextColor="#4CAF50"
+        app:tabIndicatorColor="#4CAF50">
 
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Auto" />
+            android:text="AUTO" />
 
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Pro" />
+            android:text="PRO" />
 
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Night" />
+            android:text="NIGHT" />
 
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Portrait" />
+            android:text="PORTRAIT" />
 
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Video" />
+            android:text="VIDEO" />
 
     </com.google.android.material.tabs.TabLayout>
 
     <!-- Focus Indicator -->
     <ImageView
         android:id="@+id/focus_indicator"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:layout_centerInParent="true"
-        android:src="@drawable/ic_focus_indicator"
-        android:visibility="invisible" />
-
-    <!-- Recording Indicator -->
-    <TextView
-        android:id="@+id/recording_indicator"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:background="@drawable/bg_recording"
-        android:padding="8dp"
-        android:text="● REC"
-        android:textColor="#FF0000"
-        android:textSize="12sp"
-        android:textStyle="bold"
-        android:visibility="gone" />
-
-    <!-- Control Panel -->
-    <LinearLayout
-        android:id="@+id/control_panel"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:background="@drawable/bg_controls_panel"
-        android:orientation="vertical"
-        android:padding="16dp">
-
-        <!-- Manual Controls (Pro Mode) -->
-        <LinearLayout
-            android:id="@+id/manual_controls"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Exposure"
-                android:textColor="#FFFFFF"
-                android:textSize="12sp" />
-
-            <SeekBar
-                android:id="@+id/seek_exposure"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:max="100"
-                android:progress="50"
-                android:progressDrawable="@drawable/seekbar_progress"
-                android:thumb="@drawable/thumb_seekbar" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="ISO"
-                android:textColor="#FFFFFF"
-                android:textSize="12sp" />
-
-            <SeekBar
-                android:id="@+id/seek_iso"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:max="100"
-                android:progress="50"
-                android:progressDrawable="@drawable/seekbar_progress"
-                android:thumb="@drawable/thumb_seekbar" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Zoom"
-                android:textColor="#FFFFFF"
-                android:textSize="12sp" />
-
-            <SeekBar
-                android:id="@+id/seek_zoom"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:max="100"
-                android:progress="0"
-                android:progressDrawable="@drawable/seekbar_progress"
-                android:thumb="@drawable/thumb_seekbar" />
-
-        </LinearLayout>
-
-        <!-- Bottom Controls -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <ImageButton
-                android:id="@+id/btn_gallery"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="@drawable/ripple_effect"
-                android:src="@drawable/ic_gallery_modern"
-                android:contentDescription="Gallery" />
-
-            <Space
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1" />
-
-            <!-- Capture Button -->
-            <ImageButton
-                android:id="@+id/btn_capture"
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:background="@drawable/btn_selector_capture"
-                android:scaleType="center"
-                android:src="@drawable/btn_capture_modern"
-                android:contentDescription="Capture" />
-
-            <Space
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1" />
-
-            <ImageButton
-                android:id="@+id/btn_mode_switch"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="@drawable/ripple_effect"
-                android:src="@drawable/ic_mode_switch"
-                android:contentDescription="Switch Mode" />
-
-        </LinearLayout>
-
-    </LinearLayout>
+        android:src="@drawable/focus_indicator"
+        android:visibility="invisible"
+        android:contentDescription="Focus" />
 
 </RelativeLayout>
