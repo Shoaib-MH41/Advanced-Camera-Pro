@@ -1,26 +1,21 @@
-name: Check Project Errors
+name: One Line Errors
 
-on:
-  workflow_dispatch:
-  push:
-    branches: [ main ]
+on: [push]
 
 jobs:
-  check:
+  oneline:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Install JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Install Gradle (without wrapper)
-        uses: gradle/gradle-build-action@v2
-
-      - name: Run Gradle Project Check
-        run: gradle --info --stacktrace --warning-mode all build
+    - uses: actions/checkout@v4
+    - uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Find Exact Error Files
+      run: |
+        chmod +x ./gradlew
+        ./gradlew clean assembleDebug --no-daemon 2>&1 | \
+        grep -E "error:.*\.(java|kt|xml):" | \
+        awk -F: '{print $1 " -> Line " $2 ": " $3}' | \
+        head -10
