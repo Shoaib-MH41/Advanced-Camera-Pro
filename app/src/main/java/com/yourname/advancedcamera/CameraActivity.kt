@@ -921,7 +921,6 @@ class CameraActivity : AppCompatActivity() {
         } else {
             choices[0]
         }
-    }  // ← یہاں صرف ایک brace ہونی چاہیے
     
     internal class CompareSizesByArea : Comparator<Size> {
         override fun compare(lhs: Size, rhs: Size): Int {
