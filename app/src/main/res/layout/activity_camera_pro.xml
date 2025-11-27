@@ -46,6 +46,36 @@
 
     </LinearLayout>
 
+    <!-- 🎨 LUT Selection Panel (Pro Mode) -->
+    <LinearLayout
+        android:id="@+id/lut_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/control_panel"
+        android:orientation="horizontal"
+        android:background="#80000000"
+        android:padding="12dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🎨 LUT:"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:layout_marginEnd="8dp"
+            android:gravity="center_vertical" />
+
+        <Spinner
+            android:id="@+id/spinner_lut"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/btn_circle"
+            android:popupBackground="#80000000" />
+
+    </LinearLayout>
+
     <!-- 🎛️ Manual Controls Panel -->
     <LinearLayout
         android:id="@+id/control_panel"
@@ -279,7 +309,7 @@
         android:id="@+id/tab_modes"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:layout_above="@id/control_panel"
+        android:layout_above="@id/lut_panel"
         android:background="#80000000"
         app:tabTextColor="#CCFFFFFF"
         app:tabSelectedTextColor="#4CAF50"
