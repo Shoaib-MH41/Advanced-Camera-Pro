@@ -14,6 +14,7 @@ class FeatureManager private constructor() {
     
     companion object {
         private var instance: FeatureManager? = null
+        private const val TAG = "DSLRFeatureManager"  // ✅ TAG moved here
         
         fun getInstance(): FeatureManager {
             return instance ?: synchronized(this) {
@@ -315,9 +316,5 @@ class FeatureManager private constructor() {
             "ManualFeatures" to 6,
             "VideoFeatures" to 4
         )
-    }
-
-    companion object {
-        private const val TAG = "DSLRFeatureManager"
     }
 }
