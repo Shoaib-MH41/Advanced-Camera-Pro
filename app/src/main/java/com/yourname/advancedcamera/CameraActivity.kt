@@ -39,8 +39,15 @@ import java.nio.ByteBuffer
 import java.util.*
 import kotlin.collections.ArrayList
 
+// اضافی imports
+import com.google.android.material.tabs.TabLayout
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Spinner
+
 class CameraActivity : AppCompatActivity() {
-    
+
+}
     // ==================== 🎥 CAMERA COMPONENTS ====================
     private lateinit var textureView: TextureView
     private lateinit var btnCapture: ImageButton
