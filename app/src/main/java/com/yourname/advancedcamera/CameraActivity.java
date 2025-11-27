@@ -228,11 +228,13 @@ public class CameraActivity extends AppCompatActivity {
      */
     private void initializeAdvancedFeatures() {
         try {
-            featureManager = new FeatureManager(this);
+            // ✅ CORRECTED: Constructor without parameters
+            featureManager = new FeatureManager();
             colorLUTs = new ColorLUTs();
             nightProcessor = new NightModeProcessor();
             
-            featureManager.initializeFeatures();
+            // ✅ CORRECTED: Removed initializeFeatures() call since it doesn't exist
+            // featureManager.initializeFeatures(); // This method doesn't exist in FeatureManager
             
             // Show available features in log
             List<String> availableFeatures = featureManager.getAvailableFeatures();
