@@ -381,8 +381,8 @@ class FeatureManager private constructor() {
                 
                 // Basic sharpening
                 val newR = (r * 1.5f - pixels[i-1] and 0xFF * 0.25f).coerceIn(0f, 255f).toInt()
-                val newG = (g * 1.5f - pixels[i-1] shr 8 and 0xFF * 0.25f).coerceIn(0f, 255f).toInt()
-                val newB = (b * 1.5f - pixels[i-1] shr 16 and 0xFF * 0.25f).coerceIn(0f, 255f).toInt()
+                val newG = (g * 1.5f - (Color.green(pixels[i-1]) * 0.25f)).coerceIn(0f, 255f).toInt()
+                val newB = (b * 1.5f - (Color.blue(pixels[i-1]) * 0.25f)).coerceIn(0f, 255f).toInt()
                 
                 pixels[i] = Color.rgb(newR, newG, newB)
             }
