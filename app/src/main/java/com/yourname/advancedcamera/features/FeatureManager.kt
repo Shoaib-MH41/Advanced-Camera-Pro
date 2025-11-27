@@ -8,13 +8,13 @@ class FeatureManager {
         private const val TAG = "FeatureManager"
     }
 
-    // Java سے استعمال کرنے کے لیے لازمی public var
-    var isNightVisionEnabled = true
-    var isColorLUTsEnabled = true
-    var isMotionDeblurEnabled = false
-    var isRawCaptureEnabled = false
-    var isUltraZoomEnabled = true
-    var isHDREnabled = true
+    // ✅ Java سے access کے لیے @JvmField annotation استعمال کریں
+    @JvmField var isNightVisionEnabled = true
+    @JvmField var isColorLUTsEnabled = true
+    @JvmField var isMotionDeblurEnabled = false
+    @JvmField var isRawCaptureEnabled = false
+    @JvmField var isUltraZoomEnabled = true
+    @JvmField var isHDREnabled = true
 
     init {
         Log.d(TAG, "Advanced FeatureManager loaded – All pro features enabled for demo")
@@ -23,7 +23,7 @@ class FeatureManager {
     fun getAvailableFeatures(): List<String> {
         return listOf(
             "AI Night Vision",
-            "Cinematic Color LUTs",
+            "Cinematic Color LUTs", 
             "50x Ultra Zoom",
             "HDR+ Fusion",
             "Motion Deblur",
