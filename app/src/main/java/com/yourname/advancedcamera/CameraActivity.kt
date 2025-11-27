@@ -906,7 +906,7 @@ class CameraActivity : AppCompatActivity() {
     }
     
     // ==================== 🛠️ UTILITY CLASSES ====================
-    private fun chooseOptimalSize(choices: Array<Size>, width: Int, height: Int): Size {
+        private fun chooseOptimalSize(choices: Array<Size>, width: Int, height: Int): Size {
         val bigEnough = ArrayList<Size>()
         
         for (option in choices) {
@@ -921,9 +921,9 @@ class CameraActivity : AppCompatActivity() {
         } else {
             choices[0]
         }
-    }
+    }  // ← یہاں صرف ایک brace ہونی چاہیے
     
-        internal class CompareSizesByArea : Comparator<Size> {
+    internal class CompareSizesByArea : Comparator<Size> {
         override fun compare(lhs: Size, rhs: Size): Int {
             return java.lang.Long.signum(
                 lhs.width.toLong() * lhs.height - rhs.width.toLong() * rhs.height
