@@ -1,40 +1,50 @@
 package com.yourname.advancedcamera.utils
 
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import android.util.Log
+import java.util.concurrent.ScheduledExecutorService
 
-object AppExecutors {
-
-    private const val TAG = "AppExecutors"
-
-    lateinit var ioExecutor: ExecutorService
-    lateinit var cpuExecutor: ExecutorService
-    lateinit var cameraExecutor: ExecutorService
-
-    fun init() {
-        Log.d(TAG, "⚙ Initializing Global Thread Executors…")
-
-        // For heavy CPU AI tasks (Denoise, Fusion, Deblur)
-        cpuExecutor = Executors.newFixedThreadPool(
-            Runtime.getRuntime().availableProcessors()
-        )
-
-        // For file writes, saving images
-        ioExecutor = Executors.newSingleThreadExecutor()
-
-        // For camera operations / preview frame processing
-        cameraExecutor = Executors.newFixedThreadPool(2)
-    }
-
-    fun shutdown() {
-        try {
-            Log.d(TAG, "🛑 Shutting down AppExecutors…")
-            ioExecutor.shutdown()
-            cpuExecutor.shutdown()
-            cameraExecutor.shutdown()
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Error shutting down executors: ${e.message}")
+class AppExecutors private constructor() {
+    
+    companion object {
+        @Volatile
+        private var INSTANCE: AppExecutors? = null
+        
+        fun getInstance(): AppExecutors {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: AppExecutors().also { INSTANCE = it }
+            }
         }
+        
+        fun init() {
+            // Initialize singleton
+            getInstance()
+        }
+        
+        fun shutdown() {
+            INSTANCE?.shutdownAll()
+            INSTANCE = null
+        }
+    }
+    
+    private val diskIO = Executors.newSingleThreadExecutor()
+    private val networkIO = Executors.newFixedThreadPool(3)
+    private val mainThreadExecutor = MainThreadExecutor()
+    
+    fun diskIO(): java.util.concurrent.Executor = diskIO
+    fun networkIO(): java.util.concurrent.Executor = networkIO
+    fun mainThread(): java.util.concurrent.Executor = mainThreadExecutor
+    
+    private fun shutdownAll() {
+        diskIO.shutdown()
+        networkIO.shutdown()
+    }
+}
+
+// Simple main thread executor for testing
+class MainThreadExecutor : java.util.concurrent.Executor {
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    
+    override fun execute(command: Runnable) {
+        handler.post(command)
     }
 }
