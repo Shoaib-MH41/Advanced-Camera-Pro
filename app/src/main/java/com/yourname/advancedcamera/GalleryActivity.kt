@@ -1,43 +1,65 @@
 package com.yourname.advancedcamera
 
 import android.os.Bundle
-import android.widget.GridView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.yourname.advancedcamera.utils.GalleryAdapter
-import java.io.File
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 
 class GalleryActivity : AppCompatActivity() {
-
-    private lateinit var gridView: GridView
-    private lateinit var images: MutableList<String>
-
+    
+    private lateinit var galleryRecyclerView: RecyclerView
+    private lateinit var galleryAdapter: GalleryAdapter
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_gallery)
-
-        gridView = findViewById(R.id.galleryGrid)
-        images = loadImages()
-
-        gridView.adapter = GalleryAdapter(this, images)
-
-        gridView.setOnItemClickListener { _, _, position, _ ->
-            val img = images[position]
-            Toast.makeText(this, "Selected: $img", Toast.LENGTH_SHORT).show()
+        
+        initializeViews()
+        setupGallery()
+    }
+    
+    private fun initializeViews() {
+        // Initialize RecyclerView
+        galleryRecyclerView = findViewById(R.id.galleryGrid)
+        
+        // Setup toolbar if needed
+        val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        
+        // Back button handler
+        toolbar.setNavigationOnClickListener {
+            onBackPressedDispatcher.onBackPressed()
         }
     }
-
-    private fun loadImages(): MutableList<String> {
-        val list = mutableListOf<String>()
-        val folder = File("${filesDir}/CapturedImages")
-
-        if (!folder.exists()) folder.mkdirs()
-
-        folder.listFiles()?.forEach {
-            if (it.absolutePath.endsWith(".jpg") || it.absolutePath.endsWith(".png")) {
-                list.add(it.absolutePath)
+    
+    private fun setupGallery() {
+        // Create sample data - replace with actual image paths
+        val sampleImages = listOf(
+            "image1.jpg",
+            "image2.jpg", 
+            "image3.jpg",
+            "image4.jpg"
+        )
+        
+        // Initialize adapter with CORRECT parameters
+        galleryAdapter = GalleryAdapter(
+            images = sampleImages,
+            onItemClick = { imagePath ->
+                // Handle image click
+                onImageClicked(imagePath)
             }
-        }
-        return list
+        )
+        
+        // Setup layout manager
+        val layoutManager = GridLayoutManager(this, 3) // 3 columns grid
+        galleryRecyclerView.layoutManager = layoutManager
+        galleryRecyclerView.adapter = galleryAdapter
+    }
+    
+    private fun onImageClicked(imagePath: String) {
+        // Handle image click - open full screen, share, etc.
+        // You can implement this later
+        android.widget.Toast.makeText(this, "Clicked: $imagePath", android.widget.Toast.LENGTH_SHORT).show()
     }
 }
