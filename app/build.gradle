@@ -16,6 +16,10 @@ android {
         versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
+        
+        // ✅ BuildConfig generate karne ke liye add karein
+        buildConfigField "String", "APP_VERSION", "\"${versionName}\""
+        buildConfigField "boolean", "IS_DEBUG", "false"
     }
 
     buildTypes {
@@ -24,11 +28,19 @@ android {
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
                     'proguard-rules.pro'
+            
+            // ✅ Release BuildConfig values
+            buildConfigField "boolean", "IS_DEBUG", "false"
+            buildConfigField "String", "BUILD_TYPE", "\"RELEASE\""
         }
         debug {
             minifyEnabled false
             debuggable true
             applicationIdSuffix ".debug"
+            
+            // ✅ Debug BuildConfig values  
+            buildConfigField "boolean", "IS_DEBUG", "true"
+            buildConfigField "String", "BUILD_TYPE", "\"DEBUG\""
         }
     }
 
@@ -43,6 +55,7 @@ android {
 
     buildFeatures {
         viewBinding true
+        buildConfig true  // ✅ Ye line IMPORTANT hai - BuildConfig enable karega
     }
 
     packagingOptions {
@@ -74,6 +87,11 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.recyclerview:recyclerview:1.3.1'
+    
+    // ✅ IMPORTANT: Preferences library add karein
+    implementation 'androidx.preference:preference-ktx:1.2.1'
+    implementation 'androidx.fragment:fragment-ktx:1.6.2'
+    implementation 'androidx.activity:activity-ktx:1.8.2'
 
     // CameraX
     implementation 'androidx.camera:camera-core:1.3.1'
