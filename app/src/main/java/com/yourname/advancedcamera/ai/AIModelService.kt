@@ -1,35 +1,68 @@
 package com.yourname.advancedcamera.ai
 
-import android.app.Service
-import android.content.Intent
-import android.os.IBinder
+import android.content.Context
 import android.util.Log
 
-class AIModelService : Service() {
+object AIModelManager {
 
-    companion object {
-        private const val TAG = "AIModelService"
+    private const val TAG = "AIModelManager"
+
+    private var isInitialized = false
+    private var lowRamMode = false
+
+    fun initialize(context: Context, enableLowRamMode: Boolean) {
+
+        if (isInitialized) {
+            Log.d(TAG, "AIModelManager already initialized")
+            return
+        }
+
+        lowRamMode = enableLowRamMode
+
+        Log.d(TAG, "🤖 Initializing AI Engine… LowRamMode = $lowRamMode")
+
+        // Load models depending on device capability
+        loadNightVisionModel()
+        loadHDRFusionModel()
+        loadDeblurModel()
+        loadColorLUTEngine()
+        loadSuperResolutionModel()
+
+        isInitialized = true
+        Log.d(TAG, "🚀 AI Engine Ready")
     }
 
-    override fun onBind(intent: Intent?): IBinder? = null  // Not a bound service
-
-    override fun onCreate() {
-        super.onCreate()
-        Log.d(TAG, "AI Model Service Started")
-
-        // Initialize all AI / ML components here
-        initializeAIModels()
+    private fun loadNightVisionModel() {
+        Log.d(TAG, "🌙 Loading Night Vision model…")
+        // TODO: Load TFLite / ML model
     }
 
-    private fun initializeAIModels() {
-        // TODO: Load TFLite / ONNX / GPU optimized models here
-        // Example:
-        // AIEngine.loadFaceDetectionModel()
-        // AIEngine.loadLowLightEnhancer()
+    private fun loadHDRFusionModel() {
+        Log.d(TAG, "🔆 Loading HDR+ Fusion model…")
+        // TODO: AI HDR+ model
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        Log.d(TAG, "AI Model Service Stopped")
+    private fun loadDeblurModel() {
+        Log.d(TAG, "✨ Loading Motion Deblur model…")
+        // TODO: Load Deblur model
+    }
+
+    private fun loadColorLUTEngine() {
+        Log.d(TAG, "🎨 Initializing Color LUT Engine…")
+        // TODO: LUT engine
+    }
+
+    private fun loadSuperResolutionModel() {
+        if (lowRamMode) {
+            Log.w(TAG, "🔍 Super-Resolution light mode (Low RAM)")
+            return
+        }
+        Log.d(TAG, "🔍 Loading Super Resolution model…")
+        // TODO: Super res model
+    }
+
+    fun shutdown() {
+        Log.d(TAG, "🛑 Shutting down AI Engine…")
+        isInitialized = false
     }
 }
