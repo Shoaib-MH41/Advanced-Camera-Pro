@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+    <!-- Video Quality Options -->
+    <string-array name="video_quality_entries">
+        <item>720p HD</item>
+        <item>1080p Full HD</item>
+        <item>4K Ultra HD</item>
+        <item>8K Ultra HD</item>
+    </string-array>
+    
+    <string-array name="video_quality_values">
+        <item>720p</item>
+        <item>1080p</item>
+        <item>4k</item>
+        <item>8k</item>
+    </string-array>
+
+    <!-- Photo Resolution Options -->
+    <string-array name="photo_resolution_entries">
+        <item>8MP (3264x2448)</item>
+        <item>12MP (4000x3000)</item>
+        <item>16MP (4920x3264)</item>
+        <item>20MP (5120x3840)</item>
+    </string-array>
+    
+    <string-array name="photo_resolution_values">
+        <item>8MP</item>
+        <item>12MP</item>
+        <item>16MP</item>
+        <item>20MP</item>
+    </string-array>
+
+    <!-- Timer Options -->
+    <string-array name="timer_entries">
+        <item>No Timer</item>
+        <item>3 Seconds</item>
+        <item>5 Seconds</item>
+        <item>10 Seconds</item>
+    </string-array>
+    
+    <string-array name="timer_values">
+        <item>0</item>
+        <item>3</item>
+        <item>5</item>
+        <item>10</item>
+    </string-array>
+
+    <!-- Storage Options -->
+    <string-array name="storage_entries">
+        <item>Internal Storage</item>
+        <item>SD Card</item>
+        <item>Cloud Storage</item>
+    </string-array>
+    
+    <string-array name="storage_values">
+        <item>internal</item>
+        <item>sdcard</item>
+        <item>cloud</item>
+    </string-array>
+
+    <!-- Format Options -->
+    <string-array name="format_entries">
+        <item>JPEG (Recommended)</item>
+        <item>PNG</item>
+        <item>WebP</item>
+        <item>RAW</item>
+    </string-array>
+    
+    <string-array name="format_values">
+        <item>jpeg</item>
+        <item>png</item>
+        <item>webp</item>
+        <item>raw</item>
+    </string-array>
+
+</resources>
