@@ -7,27 +7,29 @@ import android.util.Log
 
 class AIModelService : Service() {
 
-    private val TAG = "AIModelService"
+    companion object {
+        private const val TAG = "AIModelService"
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null  // Not a bound service
 
     override fun onCreate() {
         super.onCreate()
-        Log.d(TAG, "AI Model Service Created")
+        Log.d(TAG, "AI Model Service Started")
 
-        // Initialize AI models here
+        // Initialize all AI / ML components here
         initializeAIModels()
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
-        return null   // Service is not bindable (same as Java)
-    }
-
     private fun initializeAIModels() {
-        // TODO: Load AI models (Face Detect, Scene Detect, Deblur, Night Vision)
-        Log.d(TAG, "AI Models Initialized")
+        // TODO: Load TFLite / ONNX / GPU optimized models here
+        // Example:
+        // AIEngine.loadFaceDetectionModel()
+        // AIEngine.loadLowLightEnhancer()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.d(TAG, "AI Model Service Destroyed")
+        Log.d(TAG, "AI Model Service Stopped")
     }
 }
