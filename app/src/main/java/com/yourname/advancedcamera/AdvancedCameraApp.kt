@@ -2,6 +2,7 @@ package com.yourname.advancedcamera
 
 import android.app.Application
 import android.content.ComponentCallbacks2
+import android.content.Context  // ✅ IMPORT ADDED
 import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
 import com.yourname.advancedcamera.ai.AIModelManager
@@ -90,7 +91,6 @@ class AdvancedCameraApp : Application() {
             enableLiteMode()
         } else {
             Log.i(TAG, "📈 High Performance Mode Activated")
-            enablePerformanceMode()
         }
         
         Log.d(TAG, "✅ Performance Optimization Complete")
@@ -102,8 +102,6 @@ class AdvancedCameraApp : Application() {
     private fun initializeAIModules() {
         Log.d(TAG, "🧠 Loading AI Intelligence Engine...")
         
-        val startTime = System.currentTimeMillis()
-        
         AIModelManager.initialize(
             context = this,
             enableLowRamMode = isLowRamDevice(),
@@ -113,8 +111,7 @@ class AdvancedCameraApp : Application() {
             }
         )
         
-        val loadTime = System.currentTimeMillis() - startTime
-        Log.i(TAG, "✅ AI Engine Ready in ${loadTime}ms")
+        Log.i(TAG, "✅ AI Engine Ready")
     }
 
     /**
@@ -134,65 +131,32 @@ class AdvancedCameraApp : Application() {
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            // Log the crash with detailed context
             Log.e(TAG, "💥 Critical Exception in ${thread.name}:", throwable)
-            
-            // Attempt graceful recovery for non-fatal errors
-            if (isRecoverableError(throwable)) {
-                Log.w(TAG, "🔄 Attempting graceful recovery...")
-                // You can add recovery logic here
-            }
-            
-            // Call original handler (will crash app)
             defaultHandler?.uncaughtException(thread, throwable)
         }
-        
-        Log.d(TAG, "✅ Exception Handler Setup Complete")
     }
 
     /**
      * 📉 Lite Mode for Low-RAM Devices
      */
     private fun enableLiteMode() {
-        // Reduce cache sizes
         System.gc()
-        
         Log.i(TAG, "🔄 Lite Mode: Optimized for low memory devices")
     }
 
     /**
-     * 🚀 Performance Mode for High-End Devices
-     */
-    private fun enablePerformanceMode() {
-        Log.i(TAG, "🎯 Performance Mode: All features enabled")
-    }
-
-    /**
-     * 🔍 Device Capability Checks
+     * 🔍 Device Capability Check
      */
     private fun isLowRamDevice(): Boolean {
         val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
         return activityManager.isLowRamDevice
     }
 
-    private fun isRecoverableError(throwable: Throwable): Boolean {
-        return when (throwable) {
-            is OutOfMemoryError -> true
-            is NullPointerException -> true
-            else -> false
-        }
-    }
-
     override fun onLowMemory() {
         super.onLowMemory()
         Log.w(TAG, "🚨 Low Memory Warning - Cleaning caches")
-        
-        // Clear image caches
         ImageEngine.clearCache()
-        
-        // Reduce AI model memory footprint
         AIModelManager.reduceMemoryUsage()
-        
         System.gc()
     }
 
@@ -207,35 +171,25 @@ class AdvancedCameraApp : Application() {
             }
             ComponentCallbacks2.TRIM_MEMORY_MODERATE -> {
                 Log.d(TAG, "🧹 TRIM_MEMORY_MODERATE - Moderate cleanup")
-                ImageEngine.reduceCacheSize(0.5) // Reduce to 50%
+                ImageEngine.reduceCacheSize(0.5)
             }
         }
     }
 
     override fun onTerminate() {
         Log.i(TAG, "🛑 Application Termination Started...")
-        
-        // Phase 1: Stop background operations
         AppExecutors.shutdown()
-        
-        // Phase 2: Release AI resources
         AIModelManager.shutdown()
-        
-        // Phase 3: Clear image caches
         ImageEngine.shutdown()
-        
-        // Phase 4: Unregister lifecycle callbacks
         unregisterActivityLifecycleCallbacks(AppLifecycleTracker)
-        
         _instance = null
-        
         super.onTerminate()
         Log.i(TAG, "✅ Application Cleanup Completed")
     }
 }
 
 /**
- * 📊 App Lifecycle Tracker for Monitoring
+ * 📊 App Lifecycle Tracker
  */
 object AppLifecycleTracker : Application.ActivityLifecycleCallbacks {
     private var foregroundActivities = 0
@@ -255,7 +209,6 @@ object AppLifecycleTracker : Application.ActivityLifecycleCallbacks {
         }
     }
     
-    // Other lifecycle methods with empty implementations
     override fun onActivityCreated(activity: android.app.Activity, savedInstanceState: android.os.Bundle?) {}
     override fun onActivityResumed(activity: android.app.Activity) {}
     override fun onActivityPaused(activity: android.app.Activity) {}
