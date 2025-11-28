@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- Camera Settings Category -->
+    <PreferenceCategory
+        android:title="Camera Settings"
+        app:icon="@android:drawable/ic_menu_camera">
+
+        <!-- Video Quality Setting -->
+        <ListPreference
+            android:key="video_quality"
+            android:title="Video Quality"
+            android:summary="Select video recording quality"
+            android:entries="@array/video_quality_entries"
+            android:entryValues="@array/video_quality_values"
+            android:defaultValue="1080p"
+            app:icon="@android:drawable/ic_media_play" />
+
+        <!-- Photo Resolution -->
+        <ListPreference
+            android:key="photo_resolution"
+            android:title="Photo Resolution"
+            android:summary="Select photo resolution"
+            android:entries="@array/photo_resolution_entries"
+            android:entryValues="@array/photo_resolution_values"
+            android:defaultValue="12MP"
+            app:icon="@android:drawable/ic_menu_camera" />
+
+        <!-- Auto Flash Setting -->
+        <SwitchPreference
+            android:key="auto_flash"
+            android:title="Auto Flash"
+            android:summary="Enable automatic flash mode"
+            android:defaultValue="true"
+            app:icon="@android:drawable/ic_popup_reminder" />
+
+    </PreferenceCategory>
+
+    <!-- Timer Settings Category -->
+    <PreferenceCategory
+        android:title="Timer &amp; Capture"
+        app:icon="@android:drawable/ic_lock_idle_alarm">
+
+        <!-- Timer Delay -->
+        <ListPreference
+            android:key="timer_delay"
+            android:title="Timer Delay"
+            android:summary="Set capture timer delay"
+            android:entries="@array/timer_entries"
+            android:entryValues="@array/timer_values"
+            android:defaultValue="0"
+            app:icon="@android:drawable/ic_media_ff" />
+
+        <!-- Burst Mode -->
+        <SwitchPreference
+            android:key="burst_mode"
+            android:title="Burst Mode"
+            android:summary="Take multiple photos quickly"
+            android:defaultValue="false"
+            app:icon="@android:drawable/ic_menu_gallery" />
+
+        <!-- Grid Lines -->
+        <SwitchPreference
+            android:key="grid_lines"
+            android:title="Grid Lines"
+            android:summary="Show grid lines for composition"
+            android:defaultValue="true"
+            app:icon="@android:drawable/ic_menu_edit" />
+
+    </PreferenceCategory>
+
+    <!-- Storage Settings Category -->
+    <PreferenceCategory
+        android:title="Storage &amp; Format"
+        app:icon="@android:drawable/ic_menu_save">
+
+        <!-- Storage Location -->
+        <ListPreference
+            android:key="storage_location"
+            android:title="Storage Location"
+            android:summary="Choose where to save photos/videos"
+            android:entries="@array/storage_entries"
+            android:entryValues="@array/storage_values"
+            android:defaultValue="internal"
+            app:icon="@android:drawable/ic_menu_save" />
+
+        <!-- Image Format -->
+        <ListPreference
+            android:key="image_format"
+            android:title="Image Format"
+            android:summary="Select image file format"
+            android:entries="@array/format_entries"
+            android:entryValues="@array/format_values"
+            android:defaultValue="jpeg"
+            app:icon="@android:drawable/ic_menu_gallery" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>
