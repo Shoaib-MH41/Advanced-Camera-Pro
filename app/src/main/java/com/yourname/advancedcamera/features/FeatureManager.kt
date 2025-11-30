@@ -506,7 +506,7 @@ class FeatureManager private constructor() {
             avgR > 200 && avgG > 200 && avgB > 200 -> "SNOW"
             avgG > avgR + 20 && avgG > avgB + 20 -> "LANDSCAPE"
             avgR > avgG + 30 && avgR > avgB + 30 -> "SUNSET"
-            avgR + avgG + avgB < 150 -> "NIGHT"
+            (avgR + avgG + avgB) / 3 < 40 -> "NIGHT"
             Math.abs(avgR - avgG) < 20 && Math.abs(avgG - avgB) < 20 -> "INDOOR"
             else -> "PORTRAIT"
         }
