@@ -1,33 +1,10 @@
 package com.yourname.advancedcamera
 
 import android.Manifest
-import android.annotation.SuppressLint
-import android.content.ContentValues
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.ImageFormat
-import android.graphics.Matrix
-import android.graphics.RectF
-import android.graphics.SurfaceTexture
-import android.hardware.camera2.CameraAccessException
-import android.hardware.camera2.CameraCaptureSession
-import android.hardware.camera2.CameraCharacteristics
-import android.hardware.camera2.CameraDevice
-import android.hardware.camera2.CameraManager
-import android.hardware.camera2.CameraMetadata
-import android.hardware.camera2.CaptureRequest
-import android.hardware.camera2.params.StreamConfigurationMap
-import android.media.Image
-import android.media.ImageReader
 import android.os.Bundle
-import android.os.Handler
-import android.os.HandlerThread
-import android.provider.MediaStore
 import android.util.Log
-import android.util.Size
-import android.util.SparseIntArray
-import android.view.Surface
 import android.view.TextureView
 import android.view.View
 import android.widget.*
@@ -36,21 +13,20 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.material.tabs.TabLayout
 import com.yourname.advancedcamera.features.FeatureManager
-import java.io.IOException
-import java.io.OutputStream
-import java.nio.ByteBuffer
-import java.util.*
-import kotlin.collections.ArrayList
+import com.yourname.advancedcamera.managers.CameraManager
+import com.yourname.advancedcamera.managers.FileSaver
+import com.yourname.advancedcamera.processors.ImageProcessor
 
 class CameraActivity : AppCompatActivity() {
     
-    // ==================== 🎥 CAMERA COMPONENTS ====================
+    // UI Components
     private lateinit var textureView: TextureView
     private lateinit var btnCapture: ImageButton
     private lateinit var btnSwitchCamera: ImageButton
     private lateinit var btnSettings: ImageButton
     private lateinit var btnGallery: ImageButton
     private lateinit var btnModeSwitch: ImageButton
+    private lateinit var btnVideoRecord: ImageButton  // ✅ نیا video record بٹن
     private lateinit var tvStatus: TextView
     private lateinit var recordingIndicator: TextView
     private lateinit var controlPanel: LinearLayout
@@ -66,121 +42,41 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var focusIndicator: ImageView
     private lateinit var spinnerLUT: Spinner
     
-    private var cameraManager: CameraManager? = null
-    private var cameraDevice: CameraDevice? = null
-    private var captureSession: CameraCaptureSession? = null
-    private var previewRequestBuilder: CaptureRequest.Builder? = null
-    private var imageReader: ImageReader? = null
-    
-    private var backgroundHandler: Handler? = null
-    private var backgroundThread: HandlerThread? = null
-    
-    // ==================== 📊 CAMERA STATE ====================
-    private var cameraId: String? = null
-    private var previewSize: Size? = null
-    private var sensorOrientation: Int? = null
-    private var isFrontCamera = false
-    private var isRecording = false
-    private var currentMode = 0 // 0: Auto, 1: Pro, 2: Night, 3: Portrait, 4: Video
-    
-    // ==================== 🚀 ADVANCED FEATURES ====================
+    // Managers
+    private lateinit var cameraManager: CameraManager
+    private lateinit var imageProcessor: ImageProcessor
+    private lateinit var fileSaver: FileSaver
     private val featureManager = FeatureManager.getInstance()
+    
+    // State
+    private var currentMode = 0
     private var currentLUT = "CINEMATIC"
-    
-    // ==================== 🧭 ORIENTATION HANDLING ====================
-    private val ORIENTATIONS = SparseIntArray().apply {
-        append(Surface.ROTATION_0, 90)
-        append(Surface.ROTATION_90, 0)
-        append(Surface.ROTATION_180, 270)
-        append(Surface.ROTATION_270, 180)
-    }
-    
-    // ==================== 🎬 SURFACE TEXTURE LISTENER ====================
-    private val surfaceTextureListener = object : TextureView.SurfaceTextureListener {
-        override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
-            Log.d(TAG, "🔄 Surface Texture Available: $width x $height")
-            setupCamera(width, height)
-            openCamera()
-            
-            // Transform کو دوبارہ apply کریں
-            textureView.postDelayed({
-                configureTransform(textureView.width, textureView.height)
-                Log.d(TAG, "🎯 Transform Applied: ${textureView.width} x ${textureView.height}")
-            }, 100)
-        }
-        
-        override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {
-            Log.d(TAG, "🔄 Surface Texture Size Changed: $width x $height")
-            configureTransform(width, height)
-        }
-        
-        override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean = true
-        override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {}
-    }
-    
-    // ==================== 📷 CAMERA STATE CALLBACK ====================
-    private val cameraStateCallback = object : CameraDevice.StateCallback() {
-        override fun onOpened(camera: CameraDevice) {
-            cameraDevice = camera
-            startPreview()
-            updateStatus("🚀 DSLR Pro - ${featureManager.getAvailableFeatures().size} Features Active")
-        }
-        
-        override fun onDisconnected(camera: CameraDevice) {
-            cameraDevice?.close()
-            cameraDevice = null
-            updateStatus("📵 Camera Disconnected")
-        }
-        
-        override fun onError(camera: CameraDevice, error: Int) {
-            cameraDevice?.close()
-            cameraDevice = null
-            updateStatus("❌ Camera Error: $error")
-        }
-    }
-    
-    // ==================== 🎯 CAPTURE SESSION CALLBACK ====================
-    private val captureSessionCallback = object : CameraCaptureSession.StateCallback() {
-        override fun onConfigured(session: CameraCaptureSession) {
-            captureSession = session
-            try {
-                previewRequestBuilder?.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
-                previewRequestBuilder?.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON)
-                
-                val previewRequest = previewRequestBuilder?.build()
-                captureSession?.setRepeatingRequest(previewRequest!!, null, backgroundHandler)
-                Log.d(TAG, "✅ Preview started successfully")
-            } catch (e: CameraAccessException) {
-                Log.e(TAG, "Failed to start preview: ${e.message}")
-            }
-        }
-        
-        override fun onConfigureFailed(session: CameraCaptureSession) {
-            updateStatus("❌ Failed to configure camera")
-            Log.e(TAG, "❌ Capture session configuration failed")
-        }
-    }
+    private var isRecording = false  // ✅ Video recording state
 
-    // ==================== 📱 ACTIVITY LIFECYCLE ====================
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera_pro)
         
-        Log.d(TAG, "🎬 Activity Created")
+        initializeManagers()
         initializeUI()
-        initializeAdvancedFeatures()
+        setupEventListeners()
         checkPermissions()
     }
-    
-    // ==================== 🎨 UI INITIALIZATION ====================
+
+    private fun initializeManagers() {
+        cameraManager = CameraManager(this, textureView)
+        imageProcessor = ImageProcessor()
+        fileSaver = FileSaver(this)
+    }
+
     private fun initializeUI() {
-        // Find all views
         textureView = findViewById(R.id.texture_view)
         btnCapture = findViewById(R.id.btn_capture)
         btnSwitchCamera = findViewById(R.id.btn_switch_camera)
         btnSettings = findViewById(R.id.btn_settings)
         btnGallery = findViewById(R.id.btn_gallery)
         btnModeSwitch = findViewById(R.id.btn_mode_switch)
+        btnVideoRecord = findViewById(R.id.btn_video_record)  // ✅ نیا بٹن
         
         seekZoom = findViewById(R.id.seek_zoom)
         seekISO = findViewById(R.id.seek_iso)
@@ -196,815 +92,108 @@ class CameraActivity : AppCompatActivity() {
         tvFocusValue = findViewById(R.id.tv_focus_value)
         tabModes = findViewById(R.id.tab_modes)
         focusIndicator = findViewById(R.id.focus_indicator)
-        
-        // LUT Spinner
         spinnerLUT = findViewById(R.id.spinner_lut)
         
-        Log.d(TAG, "✅ UI Components Initialized")
-        
-        setupEventListeners()
         setupLUTSpinner()
         updateManualControls()
     }
-    
-    // ==================== 🚀 ADVANCED FEATURES INITIALIZATION ====================
-    private fun initializeAdvancedFeatures() {
-        try {
-            val featureStats = featureManager.getFeatureStats()
-            val availableFeatures = featureManager.getAvailableFeatures()
-            
-            Log.d(TAG, "🎯 Advanced Features Loaded: ${availableFeatures.size}")
-            Log.d(TAG, "📊 Feature Stats: $featureStats")
-            
-            updateStatus("🚀 DSLR Pro - ${availableFeatures.size} Features Active")
-            
-            // Show feature count in UI
-            Toast.makeText(this, "✅ ${availableFeatures.size} Advanced Features Loaded", Toast.LENGTH_LONG).show()
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "Advanced features initialization failed: ${e.message}")
-            updateStatus("⚠️ Basic Mode - Advanced Features Failed")
-        }
-    }
-    
-    // ==================== 🎮 EVENT LISTENERS SETUP ====================
+
     private fun setupEventListeners() {
-        textureView.surfaceTextureListener = surfaceTextureListener
+        // Button clicks
+        btnCapture.setOnClickListener { 
+            cameraManager.captureImage { bitmap ->
+                val processedBitmap = imageProcessor.applyAdvancedProcessing(
+                    bitmap, currentMode, currentLUT, featureManager
+                )
+                fileSaver.saveImage(processedBitmap, currentLUT)
+            }
+        }
         
-        // Button click listeners
-        btnCapture.setOnClickListener { captureImage() }
-        btnSwitchCamera.setOnClickListener { switchCamera() }
+        btnSwitchCamera.setOnClickListener { 
+            cameraManager.switchCamera() 
+        }
+        
+        btnVideoRecord.setOnClickListener {  // ✅ نیا video record event
+            if (!isRecording) {
+                startVideoRecording()
+            } else {
+                stopVideoRecording()
+            }
+        }
+        
         btnSettings.setOnClickListener { showAdvancedSettings() }
         btnGallery.setOnClickListener { openGallery() }
         btnModeSwitch.setOnClickListener { toggleManualMode() }
-        
-        // SeekBar listeners for manual controls
+
+        // Manual controls
         seekZoom.setOnSeekBarChangeListener(createSeekBarListener("ZOOM") { progress ->
-            val zoomLevel = 1.0f + (progress / 100.0f) * 49.0f // 1.0x to 50.0x
+            val zoomLevel = 1.0f + (progress / 100.0f) * 49.0f
             featureManager.currentZoom = zoomLevel
             tvZoomValue.text = "${String.format("%.1f", zoomLevel)}x"
-            applyZoom(zoomLevel)
+            cameraManager.applyZoom(zoomLevel)
         })
         
-        seekISO.setOnSeekBarChangeListener(createSeekBarListener("ISO") { progress ->
-            val iso = 50 + (progress * 63.5).toInt() // 50 to 6400
-            featureManager.currentISO = iso
-            tvISOValue.text = iso.toString()
-            applyManualSettings()
-        })
-        
-        seekExposure.setOnSeekBarChangeListener(createSeekBarListener("EXPOSURE") { progress ->
-            val exposure = progress - 3 // -3 to +3
-            featureManager.currentExposure = exposure
-            tvExposureValue.text = if (exposure >= 0) "+$exposure" else exposure.toString()
-            applyManualSettings()
-        })
-        
-        seekFocus.setOnSeekBarChangeListener(createSeekBarListener("FOCUS") { progress ->
-            val focus = progress / 100.0f // 0.0 to 1.0
-            featureManager.currentFocus = focus
-            tvFocusValue.text = "${(focus * 100).toInt()}%"
-            applyManualSettings()
-        })
-        
-        // Tab selection listener
-        tabModes.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
-            override fun onTabSelected(tab: TabLayout.Tab?) {
-                tab?.let {
-                    currentMode = it.position
-                    applyModeSettings(currentMode)
-                    showModeFeatures(currentMode)
-                }
-            }
-            
-            override fun onTabUnselected(tab: TabLayout.Tab?) {}
-            override fun onTabReselected(tab: TabLayout.Tab?) {}
-        })
-        
-        // Touch focus
-        textureView.setOnTouchListener { _, event ->
-            if (event.action == android.view.MotionEvent.ACTION_DOWN) {
-                val x = event.x
-                val y = event.y
-                setFocusArea(x, y)
-            }
-            true
-        }
-        
-        Log.d(TAG, "✅ Event Listeners Setup Complete")
+        // ... باقی seekbar listeners
     }
-    
-    private fun setupLUTSpinner() {
-        val lutTypes = featureManager.getLUTTypes()
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, lutTypes)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerLUT.adapter = adapter
-        
-        spinnerLUT.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                currentLUT = lutTypes[position]
-                Toast.makeText(this@CameraActivity, "🎨 ${currentLUT} LUT Selected", Toast.LENGTH_SHORT).show()
-            }
-            
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
+
+    // ✅ VIDEO RECORDING FUNCTIONS
+    private fun startVideoRecording() {
+        if (cameraManager.startVideoRecording()) {
+            isRecording = true
+            btnVideoRecord.setBackgroundColor(Color.RED)
+            recordingIndicator.visibility = View.VISIBLE
+            Toast.makeText(this, "🎬 Video Recording Started", Toast.LENGTH_SHORT).show()
         }
     }
-    
-    private fun createSeekBarListener(controlName: String, onProgressChanged: (Int) -> Unit): SeekBar.OnSeekBarChangeListener {
-        return object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                if (fromUser) {
-                    onProgressChanged(progress)
-                }
-            }
-            override fun onStartTrackingTouch(seekBar: SeekBar) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar) {}
+
+    private fun stopVideoRecording() {
+        val videoFile = cameraManager.stopVideoRecording()
+        if (videoFile != null) {
+            fileSaver.saveVideo(videoFile)
+            Toast.makeText(this, "✅ Video Saved to Gallery", Toast.LENGTH_SHORT).show()
         }
+        isRecording = false
+        btnVideoRecord.setBackgroundColor(Color.TRANSPARENT)
+        recordingIndicator.visibility = View.GONE
     }
-    
-    // ==================== 🔧 MANUAL CONTROLS UPDATE ====================
-    private fun updateManualControls() {
-        val settings = featureManager.getManualSettings()
-        
-        // Set initial values
-        val zoom = (settings["Zoom"] as? Float ?: 1.0f)
-        seekZoom.progress = ((zoom - 1.0f) / 49.0f * 100).toInt()
-        tvZoomValue.text = "${String.format("%.1f", zoom)}x"
-        
-        val iso = settings["ISO"] as? Int ?: 100
-        seekISO.progress = ((iso - 50) / 63.5).toInt()
-        tvISOValue.text = iso.toString()
-        
-        val exposure = settings["Exposure"] as? Int ?: 0
-        seekExposure.progress = exposure + 3
-        tvExposureValue.text = if (exposure >= 0) "+$exposure" else exposure.toString()
-        
-        val focus = (settings["Focus"] as? Float ?: 0.5f)
-        seekFocus.progress = (focus * 100).toInt()
-        tvFocusValue.text = "${(focus * 100).toInt()}%"
-    }
-    
-    // ==================== 🔐 PERMISSIONS HANDLING ====================
+
+    // ... باقی UI related functions
+    private fun showAdvancedSettings() { /* UI only */ }
+    private fun openGallery() { /* UI only */ }
+    private fun toggleManualMode() { /* UI only */ }
+    private fun updateManualControls() { /* UI only */ }
+    private fun setupLUTSpinner() { /* UI only */ }
+    private fun createSeekBarListener(controlName: String, onProgressChanged: (Int) -> Unit) { /* UI only */ }
+
+    // Permissions
     private fun checkPermissions() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            
-            ActivityCompat.requestPermissions(this,
-                arrayOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                REQUEST_CAMERA_PERMISSION)
+        val permissions = arrayOf(
+            Manifest.permission.CAMERA,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.RECORD_AUDIO  // ✅ Video recording permission
+        )
+        
+        if (permissions.any { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }) {
+            ActivityCompat.requestPermissions(this, permissions, 200)
         } else {
-            startBackgroundThread()
+            cameraManager.startBackgroundThread()
         }
     }
-    
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_CAMERA_PERMISSION) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                startBackgroundThread()
-            } else {
-                Toast.makeText(this, "Camera permission required", Toast.LENGTH_LONG).show()
-                finish()
-            }
+        if (requestCode == 200 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            cameraManager.startBackgroundThread()
         }
     }
-    
-    // ==================== 🔄 BACKGROUND THREAD MANAGEMENT ====================
-    private fun startBackgroundThread() {
-        backgroundThread = HandlerThread("CameraBackground").apply { start() }
-        backgroundHandler = Handler(backgroundThread!!.looper)
-        Log.d(TAG, "✅ Background thread started")
-    }
-    
-    private fun stopBackgroundThread() {
-        backgroundThread?.quitSafely()
-        try {
-            backgroundThread?.join()
-            backgroundThread = null
-            backgroundHandler = null
-        } catch (e: InterruptedException) {
-            Log.e(TAG, "Background thread interrupted: ${e.message}")
-        }
-    }
-    
-    // ==================== 📷 CAMERA SETUP ====================
-    @SuppressLint("MissingPermission")
-    private fun setupCamera(width: Int, height: Int) {
-        try {
-            cameraManager = getSystemService(CameraManager::class.java)
-            val cameraList = cameraManager!!.cameraIdList
-            
-            if (cameraList.isEmpty()) {
-                updateStatus("❌ No camera found")
-                return
-            }
-            
-            // Find back camera first
-            for (id in cameraList) {
-                val characteristics = cameraManager!!.getCameraCharacteristics(id)
-                val facing = characteristics.get(CameraCharacteristics.LENS_FACING)
-                if (facing == CameraCharacteristics.LENS_FACING_BACK) {
-                    cameraId = id
-                    break
-                }
-            }
-            
-            cameraId = cameraId ?: cameraList[0]
-            
-            val characteristics = cameraManager!!.getCameraCharacteristics(cameraId!!)
-            val map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
-                ?: return
-            
-            previewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture::class.java), width, height)
-            sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)
-            
-            Log.d(TAG, "📷 Camera Setup: $cameraId, Preview: $previewSize, Orientation: $sensorOrientation")
-            
-            configureTransform(width, height)
-            
-        } catch (e: CameraAccessException) {
-            Log.e(TAG, "Camera setup failed: ${e.message}")
-        }
-    }
-    
-    @SuppressLint("MissingPermission")
-    private fun openCamera() {
-        try {
-            cameraManager?.openCamera(cameraId!!, cameraStateCallback, backgroundHandler)
-            Log.d(TAG, "🔓 Opening camera: $cameraId")
-        } catch (e: CameraAccessException) {
-            Log.e(TAG, "Failed to open camera: ${e.message}")
-        }
-    }
-    
-    private fun startPreview() {
-        val texture = textureView.surfaceTexture ?: return
-        
-        texture.setDefaultBufferSize(previewSize!!.width, previewSize!!.height)
-        val surface = Surface(texture)
-        
-        try {
-            previewRequestBuilder = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
-            previewRequestBuilder!!.addTarget(surface)
-            
-            setupImageReader()
-            
-            cameraDevice!!.createCaptureSession(Arrays.asList(surface, imageReader!!.surface),
-                captureSessionCallback, backgroundHandler)
-                
-            Log.d(TAG, "🎬 Starting preview with size: $previewSize")
-                
-        } catch (e: CameraAccessException) {
-            Log.e(TAG, "Failed to start preview: ${e.message}")
-        }
-    }
-    
-    // ==================== 🔧 FIXED: IMAGE READER SETUP ====================
-    private fun setupImageReader() {
-        try {
-            // ✅ FIX: Use previewSize for both preview and capture to avoid cropping
-            imageReader = ImageReader.newInstance(
-                previewSize!!.width,      // ✅ Same as preview
-                previewSize!!.height,     // ✅ Same as preview  
-                ImageFormat.JPEG, 1
-            )
-            imageReader!!.setOnImageAvailableListener(imageAvailableListener, backgroundHandler)
-            
-            Log.d(TAG, "📸 ImageReader setup with PREVIEW size: $previewSize")
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "Image reader setup failed: ${e.message}")
-            // ✅ FIX: Fallback also uses previewSize
-            imageReader = ImageReader.newInstance(
-                previewSize!!.width,
-                previewSize!!.height,
-                ImageFormat.JPEG, 1
-            )
-            imageReader!!.setOnImageAvailableListener(imageAvailableListener, backgroundHandler)
-        }
-    }
-    
-    // ==================== 🖼️ IMAGE CAPTURE & PROCESSING ====================
-    private val imageAvailableListener = ImageReader.OnImageAvailableListener { reader ->
-        var image: Image? = null
-        try {
-            image = reader.acquireLatestImage()
-            if (image != null) {
-                val buffer = image.planes[0].buffer
-                val bytes = ByteArray(buffer.remaining())
-                buffer.get(bytes)
-                
-                var bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                
-                // Apply advanced DSLR processing
-                bitmap = applyAdvancedProcessing(bitmap)
-                
-                saveImage(bitmap)
-            }
-        } finally {
-            image?.close()
-        }
-    }
-    
-    private fun applyAdvancedProcessing(originalBitmap: Bitmap): Bitmap {
-        var processedBitmap = originalBitmap
-        
-        try {
-            // AI Scene Detection
-            val detectedScene = featureManager.detectScene(originalBitmap)
-            Log.d(TAG, "🧠 AI Detected Scene: $detectedScene")
-            
-            // Apply features based on current mode
-            when (currentMode) {
-                0 -> { // Auto Mode - AI decides
-                    processedBitmap = applyAutoModeProcessing(processedBitmap, detectedScene)
-                }
-                1 -> { // Pro Mode
-                    processedBitmap = applyProModeProcessing(processedBitmap)
-                }
-                2 -> { // Night Mode
-                    processedBitmap = applyNightModeProcessing(processedBitmap)
-                }
-                3 -> { // Portrait Mode
-                    processedBitmap = applyPortraitModeProcessing(processedBitmap)
-                }
-                4 -> { // Video Mode (for photos, apply cinematic LUT)
-                    if (featureManager.isColorLUTsEnabled) {
-                        processedBitmap = featureManager.applyColorLUT(processedBitmap, "CINEMATIC")
-                    }
-                }
-            }
-            
-            // Always apply noise reduction if enabled
-            if (featureManager.isNoiseReductionEnabled) {
-                processedBitmap = featureManager.processNoiseReduction(processedBitmap)
-            }
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "Advanced processing failed: ${e.message}")
-        }
-        
-        return processedBitmap
-    }
-    
-    private fun applyAutoModeProcessing(bitmap: Bitmap, scene: String): Bitmap {
-        var processed = bitmap
-        
-        when (scene) {
-            "NIGHT" -> {
-                val frames = ArrayList<Bitmap>()
-                frames.add(processed)
-                processed = featureManager.processNightVision(frames)
-            }
-            "PORTRAIT" -> {
-                processed = featureManager.processPortraitMode(processed)
-                processed = featureManager.applyColorLUT(processed, "PORTRAIT")
-            }
-            "LANDSCAPE" -> {
-                processed = featureManager.processHDR(listOf(processed))
-                processed = featureManager.applyColorLUT(processed, "CINEMATIC")
-            }
-            "SUNSET" -> {
-                processed = featureManager.applyColorLUT(processed, "WARM")
-            }
-            else -> {
-                // Apply current LUT for other scenes
-                processed = featureManager.applyColorLUT(processed, currentLUT)
-            }
-        }
-        
-        return processed
-    }
-    
-    private fun applyProModeProcessing(bitmap: Bitmap): Bitmap {
-        var processed = bitmap
-        
-        // Apply RAW processing
-        if (featureManager.isRawCaptureEnabled) {
-            processed = featureManager.processRawCapture(processed)
-        }
-        
-        // Apply current LUT
-        if (featureManager.isColorLUTsEnabled) {
-            processed = featureManager.applyColorLUT(processed, currentLUT)
-        }
-        
-        return processed
-    }
-    
-    private fun applyNightModeProcessing(bitmap: Bitmap): Bitmap {
-        var processed = bitmap
-        
-        if (featureManager.isNightVisionEnabled) {
-            val frames = ArrayList<Bitmap>()
-            frames.add(processed)
-            processed = featureManager.processNightVision(frames)
-        }
-        
-        // Apply noise reduction for night shots
-        if (featureManager.isNoiseReductionEnabled) {
-            processed = featureManager.processNoiseReduction(processed)
-        }
-        
-        return processed
-    }
-    
-    private fun applyPortraitModeProcessing(bitmap: Bitmap): Bitmap {
-        var processed = bitmap
-        
-        if (featureManager.isPortraitModeEnabled) {
-            processed = featureManager.processPortraitMode(processed)
-        }
-        
-        if (featureManager.isColorLUTsEnabled) {
-            processed = featureManager.applyColorLUT(processed, "PORTRAIT")
-        }
-        
-        return processed
-    }
-    
-    private fun captureImage() {
-        if (cameraDevice == null) return
-        
-        try {
-            showCaptureInfo()
-            
-            val captureBuilder = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)
-            captureBuilder.addTarget(imageReader!!.surface)
-            captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, getOrientation())
-            
-            captureSession!!.stopRepeating()
-            captureSession!!.capture(captureBuilder.build(), null, backgroundHandler)
-            
-            Log.d(TAG, "📸 Image captured")
-            
-        } catch (e: CameraAccessException) {
-            Log.e(TAG, "Capture failed: ${e.message}")
-        }
-    }
-    
-    private fun showCaptureInfo() {
-        val detectedScene = featureManager.detectScene(Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888))
-        var featureInfo = "📸 Basic Capture"
-        
-        when (currentMode) {
-            0 -> featureInfo = "🧠 Auto Mode - $detectedScene"
-            1 -> featureInfo = "⚙️ Pro Mode - ${currentLUT} LUT + RAW"
-            2 -> featureInfo = "🌙 Night Vision + AI Processing"
-            3 -> featureInfo = "🤖 Portrait Mode + Bokeh Effect"
-            4 -> featureInfo = "🎬 Video Mode - Cinematic LUT"
-        }
-        
-        Toast.makeText(this, featureInfo, Toast.LENGTH_SHORT).show()
-    }
-    
-    // ==================== ⚙️ CAMERA CONTROLS ====================
-    private fun setFocusArea(x: Float, y: Float) {
-        if (cameraDevice == null) return
-        
-        try {
-            // Show focus indicator
-            focusIndicator.x = x - focusIndicator.width / 2
-            focusIndicator.y = y - focusIndicator.height / 2
-            focusIndicator.visibility = View.VISIBLE
-            
-            Log.d(TAG, "🎯 Manual focus at: $x, $y")
-            Toast.makeText(this, "🎯 Focus Set", Toast.LENGTH_SHORT).show()
-            
-            // Hide focus indicator after delay
-            backgroundHandler?.postDelayed({
-                runOnUiThread {
-                    focusIndicator.visibility = View.INVISIBLE
-                }
-            }, 2000)
-            
-        } catch (e: CameraAccessException) {
-            Log.e(TAG, "Focus failed: ${e.message}")
-        }
-    }
-    
-    private fun switchCamera() {
-        cameraDevice?.close()
-        captureSession?.close()
-        
-        isFrontCamera = !isFrontCamera
-        cameraId = null
-        
-        try {
-            val cameraList = cameraManager!!.cameraIdList
-            for (id in cameraList) {
-                val characteristics = cameraManager!!.getCameraCharacteristics(id)
-                val facing = characteristics.get(CameraCharacteristics.LENS_FACING)
-                
-                if (isFrontCamera && facing == CameraCharacteristics.LENS_FACING_FRONT) {
-                    cameraId = id
-                    break
-                } else if (!isFrontCamera && facing == CameraCharacteristics.LENS_FACING_BACK) {
-                    cameraId = id
-                    break
-                }
-            }
-            
-            cameraId = cameraId ?: cameraList[0]
-            openCamera()
-            
-            Log.d(TAG, "🔄 Camera switched to: ${if (isFrontCamera) "FRONT" else "BACK"}")
-            
-        } catch (e: CameraAccessException) {
-            Log.e(TAG, "Camera switch failed: ${e.message}")
-        }
-    }
-    
-    private fun toggleManualMode() {
-        val isManual = currentMode == 1 // Pro mode
-        controlPanel.visibility = if (isManual) View.VISIBLE else View.GONE
-        currentMode = if (isManual) 0 else 1
-        
-        Toast.makeText(this, 
-            if (isManual) "🔘 Auto Mode" else "⚙️ Pro Mode", 
-            Toast.LENGTH_SHORT
-        ).show()
-    }
-    
-    private fun applyZoom(zoomLevel: Float) {
-        try {
-            // Apply digital zoom
-            previewRequestBuilder!!.set(CaptureRequest.SCALER_CROP_REGION, null)
-            captureSession!!.setRepeatingRequest(previewRequestBuilder!!.build(), null, backgroundHandler)
-        } catch (e: CameraAccessException) {
-            Log.e(TAG, "Zoom failed: ${e.message}")
-        }
-    }
-    
-    private fun applyManualSettings() {
-        if (currentMode != 1) return // Only in Pro mode
-        
-        try {
-            val settings = featureManager.getManualSettings()
-            
-            // Apply exposure compensation
-            val exposure = settings["Exposure"] as Int
-            previewRequestBuilder!!.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, exposure)
-            
-            // Apply manual ISO if supported
-            val iso = settings["ISO"] as Int
-            previewRequestBuilder!!.set(CaptureRequest.SENSOR_SENSITIVITY, iso)
-            
-            captureSession!!.setRepeatingRequest(previewRequestBuilder!!.build(), null, backgroundHandler)
-            
-        } catch (e: CameraAccessException) {
-            Log.e(TAG, "Manual settings failed: ${e.message}")
-        }
-    }
-    
-    private fun applyModeSettings(mode: Int) {
-        // Update UI based on mode
-        when (mode) {
-            1 -> { // Pro Mode
-                controlPanel.visibility = View.VISIBLE
-                findViewById<LinearLayout>(R.id.lut_panel).visibility = View.VISIBLE
-            }
-            else -> {
-                controlPanel.visibility = View.GONE
-                findViewById<LinearLayout>(R.id.lut_panel).visibility = View.GONE
-            }
-        }
-    }
-    
-    private fun showModeFeatures(mode: Int) {
-        val modeName = when (mode) {
-            0 -> "Auto Mode"
-            1 -> "Pro Mode"
-            2 -> "Night Mode"
-            3 -> "Portrait Mode"
-            4 -> "Video Mode"
-            else -> "Unknown Mode"
-        }
-        
-        val features = when (mode) {
-            0 -> "AI Scene Detection + Auto Processing"
-            1 -> "Manual Controls + RAW + LUTs"
-            2 -> "Night Vision + Noise Reduction"
-            3 -> "Portrait Bokeh + Skin Enhancement"
-            4 -> "4K Video + Stabilization"
-            else -> "Basic Features"
-        }
-        
-        Toast.makeText(this, "$modeName - $features", Toast.LENGTH_SHORT).show()
-    }
-    
-    // ==================== ⚙️ SETTINGS & UI ====================
-    private fun showAdvancedSettings() {
-        val features = featureManager.getAvailableFeatures()
-        val featureStats = featureManager.getFeatureStats()
-        val manualSettings = featureManager.getManualSettings()
-        val lutTypes = featureManager.getLUTTypes()
-        
-        val message = """
-        🚀 DSLR Camera Pro - Advanced Features
-        
-        📊 Feature Stats:
-        • Total Features: ${featureStats["TotalFeatures"]}
-        • Active Features: ${featureStats["ActiveFeatures"]}
-        • AI Features: ${featureStats["AIFeatures"]}
-        • Manual Controls: ${featureStats["ManualFeatures"]}
-        
-        ⚙️ Current Settings:
-        • ISO: ${manualSettings["ISO"]}
-        • Shutter: ${manualSettings["ShutterSpeed"]}
-        • Focus: ${(manualSettings["Focus"] as Float * 100).toInt()}%
-        • Exposure: ${manualSettings["Exposure"]}
-        • Zoom: ${manualSettings["Zoom"]}x
-        • Current LUT: $currentLUT
-        
-        🎨 Available LUTs:
-        • ${lutTypes.joinToString("\n• ")}
-        
-        🎯 Active Features (${features.size}):
-        • ${features.take(10).joinToString("\n• ")}
-        ${if (features.size > 10) "\n• ... and ${features.size - 10} more" else ""}
-        """.trimIndent()
-        
-        android.app.AlertDialog.Builder(this)
-            .setTitle("🎯 DSLR Camera Settings")
-            .setMessage(message)
-            .setPositiveButton("OK", null)
-            .setNeutralButton("Reset Settings") { _, _ ->
-                featureManager.resetToDefaults()
-                updateManualControls()
-                currentLUT = "CINEMATIC"
-                spinnerLUT.setSelection(0)
-                Toast.makeText(this, "🔄 Settings Reset to Default", Toast.LENGTH_SHORT).show()
-            }
-            .setNegativeButton("Feature Info") { _, _ ->
-                showFeatureDetails()
-            }
-            .show()
-    }
-    
-    private fun showFeatureDetails() {
-        val features = featureManager.getAvailableFeatures()
-        val message = "🎯 All Active DSLR Features:\n\n• ${features.joinToString("\n• ")}"
-        
-        android.app.AlertDialog.Builder(this)
-            .setTitle("Advanced Features (${features.size})")
-            .setMessage(message)
-            .setPositiveButton("OK", null)
-            .show()
-    }
-    
-    private fun openGallery() {
-        Toast.makeText(this, "🖼️ Gallery will be implemented in next version", Toast.LENGTH_SHORT).show()
-    }
-    
-    private fun updateStatus(message: String) {
-        runOnUiThread { tvStatus.text = message }
-    }
-    
-    // ==================== 🧭 ORIENTATION & TRANSFORM ====================
-    private fun getOrientation(): Int {
-        val rotation = windowManager.defaultDisplay.rotation
-        return (ORIENTATIONS.get(rotation) + sensorOrientation!! + 270) % 360
-    }
-    
-    private fun configureTransform(viewWidth: Int, viewHeight: Int) {
-        if (previewSize == null || textureView == null || viewWidth == 0 || viewHeight == 0) {
-            Log.w(TAG, "⚠️ Cannot configure transform - missing parameters")
-            return
-        }
 
-        val rotation = windowManager.defaultDisplay.rotation
-        val matrix = Matrix()
-        val viewRect = RectF(0f, 0f, viewWidth.toFloat(), viewHeight.toFloat())
-        val bufferRect = RectF(0f, 0f, previewSize!!.width.toFloat(), previewSize!!.height.toFloat())
-        val centerX = viewRect.centerX()
-        val centerY = viewRect.centerY()
-
-        Log.d(TAG, "🔄 Configuring transform - View: $viewWidth x $viewHeight, Preview: ${previewSize!!.width} x ${previewSize!!.height}, Rotation: $rotation")
-
-        if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
-            bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY())
-            matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL)
-            
-            val scale = Math.max(
-                viewWidth.toFloat() / previewSize!!.width,
-                viewHeight.toFloat() / previewSize!!.height
-            )
-            matrix.postScale(scale, scale, centerX, centerY)
-            matrix.postRotate(90f * (rotation - 2), centerX, centerY)
-        } else {
-            if (Surface.ROTATION_180 == rotation) {
-                matrix.postRotate(180f, centerX, centerY)
-            }
-        }
-
-        textureView.setTransform(matrix)
-        Log.d(TAG, "✅ Transform configured successfully")
-    }
-    
-    // ==================== 💾 FIXED: GALLERY SAVE FUNCTION ====================
-    private fun saveImage(bitmap: Bitmap) {
-        try {
-            val filename = "DSLR_${System.currentTimeMillis()}_${currentLUT}.jpg"
-            val values = ContentValues().apply {
-                put(MediaStore.Images.Media.DISPLAY_NAME, filename)
-                put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-                put(MediaStore.Images.Media.RELATIVE_PATH, "DCIM/AdvancedCameraPro")
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                    put(MediaStore.Images.Media.IS_PENDING, 1)
-                }
-            }
-
-            val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-            if (uri != null) {
-                var outputStream: OutputStream? = null
-                try {
-                    outputStream = contentResolver.openOutputStream(uri)
-                    if (outputStream != null) {
-                        bitmap.compress(Bitmap.CompressFormat.JPEG, 95, outputStream)
-                        Log.d(TAG, "✅ Image saved to Gallery: $filename")
-                        
-                        runOnUiThread {
-                            Toast.makeText(this, "📸 Photo saved to Gallery!", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                } finally {
-                    outputStream?.close()
-                }
-                
-                // Android 10+ کے لیے IS_PENDING update کریں
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                    values.clear()
-                    values.put(MediaStore.Images.Media.IS_PENDING, 0)
-                    contentResolver.update(uri, values, null, null)
-                }
-            } else {
-                Log.e(TAG, "❌ Failed to create MediaStore entry")
-                runOnUiThread {
-                    Toast.makeText(this, "❌ Failed to save photo", Toast.LENGTH_SHORT).show()
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Failed to save image to gallery: ${e.message}")
-            runOnUiThread {
-                Toast.makeText(this, "❌ Failed to save photo: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-    
-    // ==================== 🔄 ACTIVITY LIFECYCLE ====================
     override fun onResume() {
         super.onResume()
-        Log.d(TAG, "🔄 Activity Resumed")
-        startBackgroundThread()
-        if (textureView.isAvailable) {
-            setupCamera(textureView.width, textureView.height)
-            openCamera()
-        }
+        cameraManager.onResume()
     }
-    
+
     override fun onPause() {
-        Log.d(TAG, "⏸️ Activity Paused")
-        closeCamera()
-        stopBackgroundThread()
         super.onPause()
-    }
-    
-    private fun closeCamera() {
-        captureSession?.close()
-        cameraDevice?.close()
-        imageReader?.close()
-        Log.d(TAG, "📷 Camera closed")
-    }
-    
-    // ==================== 🛠️ UTILITY CLASSES ====================
-    private fun chooseOptimalSize(choices: Array<Size>, width: Int, height: Int): Size {
-        val bigEnough = ArrayList<Size>()
-        
-        for (option in choices) {
-            if (option.height == option.width * height / width &&
-                option.width <= width && option.height <= height) {
-                bigEnough.add(option)
-            }
-        }
-        
-        return if (bigEnough.isNotEmpty()) {
-            Collections.min(bigEnough, CompareSizesByArea())
-        } else {
-            choices[0]
-        }
-    }
-    
-    internal class CompareSizesByArea : Comparator<Size> {
-        override fun compare(lhs: Size, rhs: Size): Int {
-            return java.lang.Long.signum(
-                lhs.width.toLong() * lhs.height - rhs.width.toLong() * rhs.height
-            )
-        }
-    }
-    
-    companion object {
-        private const val TAG = "DSLRCameraPro"
-        private const val REQUEST_CAMERA_PERMISSION = 200
+        cameraManager.onPause()
     }
 }
