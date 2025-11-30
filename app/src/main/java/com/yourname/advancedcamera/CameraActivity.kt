@@ -2,6 +2,7 @@ package com.yourname.advancedcamera
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.ContentValues
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -22,6 +23,7 @@ import android.media.ImageReader
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
+import android.provider.MediaStore
 import android.util.Log
 import android.util.Size
 import android.util.SparseIntArray
@@ -34,12 +36,14 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.material.tabs.TabLayout
 import com.yourname.advancedcamera.features.FeatureManager
-import java.io.File
-import java.io.FileOutputStream
 import java.io.IOException
+import java.io.OutputStream
 import java.nio.ByteBuffer
 import java.util.*
 import kotlin.collections.ArrayList
+import android.content.ContentValues
+import android.provider.MediaStore
+import java.io.OutputStream
 
 class CameraActivity : AppCompatActivity() {
     
@@ -458,22 +462,27 @@ class CameraActivity : AppCompatActivity() {
         }
     }
     
+    // ==================== 🔧 FIXED: IMAGE READER SETUP ====================
     private fun setupImageReader() {
         try {
-            val characteristics = cameraManager!!.getCameraCharacteristics(cameraId!!)
-            val map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
-            val outputSizes = map!!.getOutputSizes(ImageFormat.JPEG)
-            val largest = Collections.max(Arrays.asList(*outputSizes), CompareSizesByArea())
-            
-            imageReader = ImageReader.newInstance(largest.width, largest.height, ImageFormat.JPEG, 1)
+            // ✅ FIX: Use previewSize for both preview and capture to avoid cropping
+            imageReader = ImageReader.newInstance(
+                previewSize!!.width,      // ✅ Same as preview
+                previewSize!!.height,     // ✅ Same as preview  
+                ImageFormat.JPEG, 1
+            )
             imageReader!!.setOnImageAvailableListener(imageAvailableListener, backgroundHandler)
             
-            Log.d(TAG, "📸 ImageReader setup with size: $largest")
+            Log.d(TAG, "📸 ImageReader setup with PREVIEW size: $previewSize")
             
-        } catch (e: CameraAccessException) {
+        } catch (e: Exception) {
             Log.e(TAG, "Image reader setup failed: ${e.message}")
-            // Fallback to default size
-            imageReader = ImageReader.newInstance(1920, 1080, ImageFormat.JPEG, 1)
+            // ✅ FIX: Fallback also uses previewSize
+            imageReader = ImageReader.newInstance(
+                previewSize!!.width,
+                previewSize!!.height,
+                ImageFormat.JPEG, 1
+            )
             imageReader!!.setOnImageAvailableListener(imageAvailableListener, backgroundHandler)
         }
     }
@@ -494,10 +503,6 @@ class CameraActivity : AppCompatActivity() {
                 bitmap = applyAdvancedProcessing(bitmap)
                 
                 saveImage(bitmap)
-                
-                runOnUiThread {
-                    Toast.makeText(this, "📸 DSLR Photo Saved with AI Processing!", Toast.LENGTH_SHORT).show()
-                }
             }
         } finally {
             image?.close()
@@ -900,18 +905,53 @@ class CameraActivity : AppCompatActivity() {
         Log.d(TAG, "✅ Transform configured successfully")
     }
     
-    // ==================== 💾 IMAGE SAVING ====================
+    // ==================== 💾 FIXED: GALLERY SAVE FUNCTION ====================
     private fun saveImage(bitmap: Bitmap) {
-        val filename = "DSLR_${System.currentTimeMillis()}_${currentLUT}.jpg"
-        val file = File(getExternalFilesDir(null), filename)
-        
         try {
-            FileOutputStream(file).use { out ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
-                Log.d(TAG, "📸 DSLR Image saved: ${file.absolutePath}")
+            val filename = "DSLR_${System.currentTimeMillis()}_${currentLUT}.jpg"
+            val values = ContentValues().apply {
+                put(MediaStore.Images.Media.DISPLAY_NAME, filename)
+                put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                put(MediaStore.Images.Media.RELATIVE_PATH, "DCIM/AdvancedCameraPro")
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    put(MediaStore.Images.Media.IS_PENDING, 1)
+                }
             }
-        } catch (e: IOException) {
-            Log.e(TAG, "Failed to save image: ${e.message}")
+
+            val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+            if (uri != null) {
+                var outputStream: OutputStream? = null
+                try {
+                    outputStream = contentResolver.openOutputStream(uri)
+                    if (outputStream != null) {
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 95, outputStream)
+                        Log.d(TAG, "✅ Image saved to Gallery: $filename")
+                        
+                        runOnUiThread {
+                            Toast.makeText(this, "📸 Photo saved to Gallery!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } finally {
+                    outputStream?.close()
+                }
+                
+                // Android 10+ کے لیے IS_PENDING update کریں
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    values.clear()
+                    values.put(MediaStore.Images.Media.IS_PENDING, 0)
+                    contentResolver.update(uri, values, null, null)
+                }
+            } else {
+                Log.e(TAG, "❌ Failed to create MediaStore entry")
+                runOnUiThread {
+                    Toast.makeText(this, "❌ Failed to save photo", Toast.LENGTH_SHORT).show()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Failed to save image to gallery: ${e.message}")
+            runOnUiThread {
+                Toast.makeText(this, "❌ Failed to save photo: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
     }
     
