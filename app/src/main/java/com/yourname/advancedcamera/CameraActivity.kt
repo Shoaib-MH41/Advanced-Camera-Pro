@@ -41,7 +41,6 @@ import java.io.OutputStream
 import java.nio.ByteBuffer
 import java.util.*
 import kotlin.collections.ArrayList
-import android.content.ContentValues
 
 class CameraActivity : AppCompatActivity() {
     
