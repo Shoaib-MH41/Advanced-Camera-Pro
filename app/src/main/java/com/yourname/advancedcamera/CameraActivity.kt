@@ -7,6 +7,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
 import android.graphics.Matrix
+import android.graphics.RectF
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCaptureSession
@@ -96,11 +97,19 @@ class CameraActivity : AppCompatActivity() {
     // ==================== 🎬 SURFACE TEXTURE LISTENER ====================
     private val surfaceTextureListener = object : TextureView.SurfaceTextureListener {
         override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
+            Log.d(TAG, "🔄 Surface Texture Available: $width x $height")
             setupCamera(width, height)
             openCamera()
+            
+            // Transform کو دوبارہ apply کریں
+            textureView.postDelayed({
+                configureTransform(textureView.width, textureView.height)
+                Log.d(TAG, "🎯 Transform Applied: ${textureView.width} x ${textureView.height}")
+            }, 100)
         }
         
         override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {
+            Log.d(TAG, "🔄 Surface Texture Size Changed: $width x $height")
             configureTransform(width, height)
         }
         
@@ -139,6 +148,7 @@ class CameraActivity : AppCompatActivity() {
                 
                 val previewRequest = previewRequestBuilder?.build()
                 captureSession?.setRepeatingRequest(previewRequest!!, null, backgroundHandler)
+                Log.d(TAG, "✅ Preview started successfully")
             } catch (e: CameraAccessException) {
                 Log.e(TAG, "Failed to start preview: ${e.message}")
             }
@@ -146,6 +156,7 @@ class CameraActivity : AppCompatActivity() {
         
         override fun onConfigureFailed(session: CameraCaptureSession) {
             updateStatus("❌ Failed to configure camera")
+            Log.e(TAG, "❌ Capture session configuration failed")
         }
     }
 
@@ -154,6 +165,7 @@ class CameraActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera_pro)
         
+        Log.d(TAG, "🎬 Activity Created")
         initializeUI()
         initializeAdvancedFeatures()
         checkPermissions()
@@ -186,6 +198,8 @@ class CameraActivity : AppCompatActivity() {
         
         // LUT Spinner
         spinnerLUT = findViewById(R.id.spinner_lut)
+        
+        Log.d(TAG, "✅ UI Components Initialized")
         
         setupEventListeners()
         setupLUTSpinner()
@@ -275,6 +289,8 @@ class CameraActivity : AppCompatActivity() {
             }
             true
         }
+        
+        Log.d(TAG, "✅ Event Listeners Setup Complete")
     }
     
     private fun setupLUTSpinner() {
@@ -356,6 +372,7 @@ class CameraActivity : AppCompatActivity() {
     private fun startBackgroundThread() {
         backgroundThread = HandlerThread("CameraBackground").apply { start() }
         backgroundHandler = Handler(backgroundThread!!.looper)
+        Log.d(TAG, "✅ Background thread started")
     }
     
     private fun stopBackgroundThread() {
@@ -400,6 +417,8 @@ class CameraActivity : AppCompatActivity() {
             previewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture::class.java), width, height)
             sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)
             
+            Log.d(TAG, "📷 Camera Setup: $cameraId, Preview: $previewSize, Orientation: $sensorOrientation")
+            
             configureTransform(width, height)
             
         } catch (e: CameraAccessException) {
@@ -411,6 +430,7 @@ class CameraActivity : AppCompatActivity() {
     private fun openCamera() {
         try {
             cameraManager?.openCamera(cameraId!!, cameraStateCallback, backgroundHandler)
+            Log.d(TAG, "🔓 Opening camera: $cameraId")
         } catch (e: CameraAccessException) {
             Log.e(TAG, "Failed to open camera: ${e.message}")
         }
@@ -431,6 +451,8 @@ class CameraActivity : AppCompatActivity() {
             cameraDevice!!.createCaptureSession(Arrays.asList(surface, imageReader!!.surface),
                 captureSessionCallback, backgroundHandler)
                 
+            Log.d(TAG, "🎬 Starting preview with size: $previewSize")
+                
         } catch (e: CameraAccessException) {
             Log.e(TAG, "Failed to start preview: ${e.message}")
         }
@@ -445,6 +467,8 @@ class CameraActivity : AppCompatActivity() {
             
             imageReader = ImageReader.newInstance(largest.width, largest.height, ImageFormat.JPEG, 1)
             imageReader!!.setOnImageAvailableListener(imageAvailableListener, backgroundHandler)
+            
+            Log.d(TAG, "📸 ImageReader setup with size: $largest")
             
         } catch (e: CameraAccessException) {
             Log.e(TAG, "Image reader setup failed: ${e.message}")
@@ -610,6 +634,8 @@ class CameraActivity : AppCompatActivity() {
             captureSession!!.stopRepeating()
             captureSession!!.capture(captureBuilder.build(), null, backgroundHandler)
             
+            Log.d(TAG, "📸 Image captured")
+            
         } catch (e: CameraAccessException) {
             Log.e(TAG, "Capture failed: ${e.message}")
         }
@@ -679,6 +705,8 @@ class CameraActivity : AppCompatActivity() {
             
             cameraId = cameraId ?: cameraList[0]
             openCamera()
+            
+            Log.d(TAG, "🔄 Camera switched to: ${if (isFrontCamera) "FRONT" else "BACK"}")
             
         } catch (e: CameraAccessException) {
             Log.e(TAG, "Camera switch failed: ${e.message}")
@@ -838,21 +866,38 @@ class CameraActivity : AppCompatActivity() {
     }
     
     private fun configureTransform(viewWidth: Int, viewHeight: Int) {
-        if (previewSize == null) return
-        
+        if (previewSize == null || textureView == null || viewWidth == 0 || viewHeight == 0) {
+            Log.w(TAG, "⚠️ Cannot configure transform - missing parameters")
+            return
+        }
+
         val rotation = windowManager.defaultDisplay.rotation
         val matrix = Matrix()
-        
-        val scaleX = viewWidth.toFloat() / previewSize!!.width
-        val scaleY = viewHeight.toFloat() / previewSize!!.height
-        
-        if (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180) {
-            matrix.setScale(scaleX, scaleY)
+        val viewRect = RectF(0f, 0f, viewWidth.toFloat(), viewHeight.toFloat())
+        val bufferRect = RectF(0f, 0f, previewSize!!.width.toFloat(), previewSize!!.height.toFloat())
+        val centerX = viewRect.centerX()
+        val centerY = viewRect.centerY()
+
+        Log.d(TAG, "🔄 Configuring transform - View: $viewWidth x $viewHeight, Preview: ${previewSize!!.width} x ${previewSize!!.height}, Rotation: $rotation")
+
+        if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
+            bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY())
+            matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL)
+            
+            val scale = Math.max(
+                viewWidth.toFloat() / previewSize!!.width,
+                viewHeight.toFloat() / previewSize!!.height
+            )
+            matrix.postScale(scale, scale, centerX, centerY)
+            matrix.postRotate(90f * (rotation - 2), centerX, centerY)
         } else {
-            matrix.setScale(scaleY, scaleX)
+            if (Surface.ROTATION_180 == rotation) {
+                matrix.postRotate(180f, centerX, centerY)
+            }
         }
-        
+
         textureView.setTransform(matrix)
+        Log.d(TAG, "✅ Transform configured successfully")
     }
     
     // ==================== 💾 IMAGE SAVING ====================
@@ -873,6 +918,7 @@ class CameraActivity : AppCompatActivity() {
     // ==================== 🔄 ACTIVITY LIFECYCLE ====================
     override fun onResume() {
         super.onResume()
+        Log.d(TAG, "🔄 Activity Resumed")
         startBackgroundThread()
         if (textureView.isAvailable) {
             setupCamera(textureView.width, textureView.height)
@@ -881,6 +927,7 @@ class CameraActivity : AppCompatActivity() {
     }
     
     override fun onPause() {
+        Log.d(TAG, "⏸️ Activity Paused")
         closeCamera()
         stopBackgroundThread()
         super.onPause()
@@ -890,6 +937,7 @@ class CameraActivity : AppCompatActivity() {
         captureSession?.close()
         cameraDevice?.close()
         imageReader?.close()
+        Log.d(TAG, "📷 Camera closed")
     }
     
     // ==================== 🛠️ UTILITY CLASSES ====================
