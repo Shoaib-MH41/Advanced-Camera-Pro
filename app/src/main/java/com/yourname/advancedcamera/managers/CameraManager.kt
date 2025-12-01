@@ -132,15 +132,26 @@ class CameraManager(private val context: Context, private val textureView: Textu
     
     private fun applyFlashModeToRequest() {
         try {
-            val flashModeConstant = when (currentFlashMode) {
-                "AUTO" -> CaptureRequest.FLASH_MODE_AUTO
-                "ON" -> CaptureRequest.FLASH_MODE_SINGLE
-                "OFF" -> CaptureRequest.FLASH_MODE_OFF
-                "TORCH" -> CaptureRequest.FLASH_MODE_TORCH
-                else -> CaptureRequest.FLASH_MODE_AUTO
+            when (currentFlashMode) {
+                "AUTO" -> {
+                    previewRequestBuilder?.set(CaptureRequest.CONTROL_AE_MODE, 
+                        CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH)
+                }
+                "ON" -> {
+                    previewRequestBuilder?.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_SINGLE)
+                    previewRequestBuilder?.set(CaptureRequest.CONTROL_AE_MODE, 
+                        CaptureRequest.CONTROL_AE_MODE_ON)
+                }
+                "OFF" -> {
+                    previewRequestBuilder?.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF)
+                    previewRequestBuilder?.set(CaptureRequest.CONTROL_AE_MODE, 
+                        CaptureRequest.CONTROL_AE_MODE_ON)
+                }
+                "TORCH" -> {
+                    previewRequestBuilder?.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH)
+                }
             }
             
-            previewRequestBuilder?.set(CaptureRequest.FLASH_MODE, flashModeConstant)
             captureSession?.setRepeatingRequest(previewRequestBuilder!!.build(), null, backgroundHandler)
         } catch (e: CameraAccessException) {
             Log.e(TAG, "Failed to apply flash mode: ${e.message}")
@@ -216,7 +227,7 @@ class CameraManager(private val context: Context, private val textureView: Textu
         stopBackgroundThread()
     }
     
-    @android.annotation.SuppressLint("MissingPermission")
+    @SuppressLint("MissingPermission")
     fun setupCamera(width: Int, height: Int) {
         try {
             cameraManager = context.getSystemService(android.hardware.camera2.CameraManager::class.java)
@@ -252,7 +263,7 @@ class CameraManager(private val context: Context, private val textureView: Textu
         }
     }
     
-    @android.annotation.SuppressLint("MissingPermission")
+    @SuppressLint("MissingPermission")
     fun openCamera() {
         try {
             cameraManager.openCamera(cameraId!!, cameraStateCallback, backgroundHandler)
@@ -304,14 +315,21 @@ class CameraManager(private val context: Context, private val textureView: Textu
             captureBuilder.addTarget(imageReader!!.surface)
             
             // ✅ APPLY FLASH MODE FOR CAPTURE
-            val flashModeConstant = when (currentFlashMode) {
-                "AUTO" -> CaptureRequest.FLASH_MODE_AUTO
-                "ON" -> CaptureRequest.FLASH_MODE_SINGLE
-                "OFF" -> CaptureRequest.FLASH_MODE_OFF
-                "TORCH" -> CaptureRequest.FLASH_MODE_TORCH
-                else -> CaptureRequest.FLASH_MODE_AUTO
+            when (currentFlashMode) {
+                "AUTO" -> {
+                    captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, 
+                        CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH)
+                }
+                "ON" -> {
+                    captureBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_SINGLE)
+                }
+                "OFF" -> {
+                    captureBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF)
+                }
+                "TORCH" -> {
+                    captureBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH)
+                }
             }
-            captureBuilder.set(CaptureRequest.FLASH_MODE, flashModeConstant)
             
             captureSession!!.stopRepeating()
             captureSession!!.capture(captureBuilder.build(), null, backgroundHandler)
