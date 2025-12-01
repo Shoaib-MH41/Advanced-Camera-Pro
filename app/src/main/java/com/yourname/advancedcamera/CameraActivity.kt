@@ -2,11 +2,10 @@ package com.yourname.advancedcamera
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
-import android.view.TextureView  // ✅ یہ شامل کریں
+import android.view.TextureView
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
@@ -57,26 +56,33 @@ class CameraActivity : AppCompatActivity() {
     private var currentFlashMode = "AUTO"
 
     override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    setContentView(R.layout.activity_camera_pro)
-
-    Log.d(TAG, "🎬 Activity Created")
-
-    initializeUI()           // ✔️ پہلے UI
-    initializeManagers()     // ✔️ پھر Managers (اب textureView null نہیں ہوگا)
-    initializeAdvancedFeatures()
-    setupEventListeners()
-    checkPermissions()
-}
-    
-    
-    private fun initializeManagers() {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_camera_pro)
+        
+        Log.d(TAG, "🎬 Activity Created")
+        
+        // Step 1: Initialize UI first (textureView must be initialized before CameraManager)
+        initializeUI()
+        
+        // Step 2: Initialize CameraManager with the initialized textureView
         cameraManager = CameraManager(this, textureView)
+        
+        // Step 3: Initialize other managers
         imageProcessor = ImageProcessor()
         fileSaver = FileSaver(this)
+        
+        // Step 4: Setup event listeners (now cameraManager is initialized)
+        setupEventListeners()
+        
+        // Step 5: Other initializations
+        initializeAdvancedFeatures()
+        
+        // Step 6: Check permissions
+        checkPermissions()
     }
     
     private fun initializeUI() {
+        // Initialize TextureView and other UI components
         textureView = findViewById(R.id.texture_view)
         btnCapture = findViewById(R.id.btn_capture)
         btnSwitchCamera = findViewById(R.id.btn_switch_camera)
@@ -120,6 +126,7 @@ class CameraActivity : AppCompatActivity() {
     
     // ==================== 🎮 EVENT LISTENERS ====================
     private fun setupEventListeners() {
+        // Now cameraManager is initialized, so set the surface texture listener
         textureView.surfaceTextureListener = cameraManager.getSurfaceTextureListener()
         
         // Button click listeners
@@ -437,17 +444,6 @@ class CameraActivity : AppCompatActivity() {
                 updateFlashIcon()
                 Toast.makeText(this, "🔄 Settings Reset to Default", Toast.LENGTH_SHORT).show()
             }
-            .show()
-    }
-    
-    private fun showFeatureDetails() {
-        val features = featureManager.getAvailableFeatures()
-        val message = "🎯 All Active DSLR Features:\n\n• ${features.joinToString("\n• ")}"
-        
-        android.app.AlertDialog.Builder(this)
-            .setTitle("Advanced Features (${features.size})")
-            .setMessage(message)
-            .setPositiveButton("OK", null)
             .show()
     }
     
