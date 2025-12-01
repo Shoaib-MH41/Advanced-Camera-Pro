@@ -14,6 +14,7 @@ import android.view.TextureView
 import java.io.File
 import java.util.*
 import java.util.Collections
+import android.hardware.camera2.params.MeteringRectangle
 
 class CameraManager(private val context: Context, private val textureView: TextureView) {
     
