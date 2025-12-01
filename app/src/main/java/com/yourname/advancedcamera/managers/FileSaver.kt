@@ -54,8 +54,9 @@ class FileSaver(private val context: Context) {
     // ✅ VIDEO SAVE FUNCTION
     fun saveVideo(videoFile: File): Boolean {
         return try {
+            val filename = "VIDEO_${System.currentTimeMillis()}.mp4"
             val values = android.content.ContentValues().apply {
-                put(MediaStore.Video.Media.DISPLAY_NAME, videoFile.name)
+                put(MediaStore.Video.Media.DISPLAY_NAME, filename)
                 put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
                 put(MediaStore.Video.Media.RELATIVE_PATH, "DCIM/AdvancedCameraPro")
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -82,6 +83,7 @@ class FileSaver(private val context: Context) {
                 
                 // Delete temporary file
                 videoFile.delete()
+                Log.d(TAG, "✅ Video saved to Gallery: $filename")
                 true
             } else {
                 false
