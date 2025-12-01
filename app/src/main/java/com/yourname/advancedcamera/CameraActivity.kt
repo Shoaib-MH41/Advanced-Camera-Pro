@@ -57,16 +57,18 @@ class CameraActivity : AppCompatActivity() {
     private var currentFlashMode = "AUTO"
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_camera_pro)
-        
-        Log.d(TAG, "🎬 Activity Created")
-        initializeManagers()
-        initializeUI()
-        initializeAdvancedFeatures()
-        setupEventListeners()
-        checkPermissions()
-    }
+    super.onCreate(savedInstanceState)
+    setContentView(R.layout.activity_camera_pro)
+
+    Log.d(TAG, "🎬 Activity Created")
+
+    initializeUI()           // ✔️ پہلے UI
+    initializeManagers()     // ✔️ پھر Managers (اب textureView null نہیں ہوگا)
+    initializeAdvancedFeatures()
+    setupEventListeners()
+    checkPermissions()
+}
+    
     
     private fun initializeManagers() {
         cameraManager = CameraManager(this, textureView)
