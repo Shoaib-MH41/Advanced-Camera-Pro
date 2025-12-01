@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
+import android.view.TextureView  // ✅ یہ شامل کریں
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
