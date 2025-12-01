@@ -1,16 +1,23 @@
 package com.yourname.advancedcamera.managers
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.ImageFormat
+import android.graphics.SurfaceTexture
 import android.hardware.camera2.*
-import android.media.*
+import android.media.Image
+import android.media.ImageReader
+import android.media.MediaRecorder
 import android.util.Log
 import android.util.Size
 import android.view.Surface
 import android.view.TextureView
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.util.*
+import java.util.Collections
 
 class CameraManager(private val context: Context, private val textureView: TextureView) {
     
