@@ -30,8 +30,8 @@ jobs:
           sed -i '/android {/a\    kotlinOptions {\n        jvmTarget = "17"\n    }' app/build.gradle || true
           sed -i '/compileOptions {/a\        sourceCompatibility JavaVersion.VERSION_17\n        targetCompatibility JavaVersion.VERSION_17' app/build.gradle || true
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon --info
+      - name: Build Debug APK (Warnings Enabled)
+        run: ./gradlew assembleDebug --no-daemon --info -PwarningsAsErrors=true
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
