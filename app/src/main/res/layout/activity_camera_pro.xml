@@ -260,14 +260,14 @@
                 android:layout_marginEnd="20dp"
                 android:contentDescription="Gallery" />
 
-            <ImageButton
-              android:id="@+id/btn_video_record"
-              android:layout_width="56dp"
-              android:layout_height="56dp"
-              android:background="@drawable/btn_video_record"
-              android:src="@drawable/ic_video_record"
-              android:layout_marginStart="20dp"
-              android:contentDescription="Video Record" />
+          <ImageButton
+          android:id="@+id/btn_video_record"
+          android:layout_width="56dp"
+          android:layout_height="56dp"
+          android:background="@drawable/btn_video_record"
+          android:src="@drawable/ic_video_record"
+          android:layout_marginStart="20dp"
+          android:contentDescription="Video Record" />
          
             <!-- 🔄 Mode Switch Button -->
             <ImageButton
