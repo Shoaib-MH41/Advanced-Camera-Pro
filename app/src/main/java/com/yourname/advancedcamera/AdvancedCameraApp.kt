@@ -1,8 +1,11 @@
 package com.yourname.advancedcamera
 
+import android.app.Activity
+import android.app.ActivityManager
 import android.app.Application
 import android.content.ComponentCallbacks2
-import android.content.Context  // ✅ IMPORT ADDED
+import android.content.Context
+import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
 import com.yourname.advancedcamera.ai.AIModelManager
@@ -13,148 +16,139 @@ class AdvancedCameraApp : Application() {
 
     companion object {
         private const val TAG = "AdvancedCameraApp"
-        
+
         @Volatile
-        private var _instance: AdvancedCameraApp? = null
-        
+        private var instanceRef: AdvancedCameraApp? = null
+
+        /** 🔥 Global Safe App Instance */
         val instance: AdvancedCameraApp
-            get() = _instance ?: throw IllegalStateException("Application not initialized")
-            
+            get() = instanceRef ?: error("❌ Application not initialized")
+
+        /** 🌍 Safe Global Context */
         val appContext: Context
             get() = instance.applicationContext
     }
 
     override fun onCreate() {
         super.onCreate()
-        
-        // Initialize singleton instance
-        _instance = this
-        
-        // Initialize app lifecycle tracker
+
+        instanceRef = this
         registerActivityLifecycleCallbacks(AppLifecycleTracker)
-        
-        // Setup crash prevention and monitoring
-        setupExceptionHandling()
-        
-        // Phase 1: Core Foundation
-        initializeFoundation()
-        
-        // Phase 2: Feature Modules
-        initializeFeatureModules()
-        
-        // Phase 3: Performance Optimization
-        initializePerformanceTuning()
-        
-        Log.i(TAG, "🚀 Advanced Camera Pro v${BuildConfig.APP_VERSION} Initialized Successfully")
-        Log.d(TAG, "📱 Build Type: ${BuildConfig.BUILD_TYPE} | Debug: ${BuildConfig.IS_DEBUG}")
+
+        Log.i(TAG, "🚀 Booting Advanced Camera Pro...")
+
+        // Layered Startup
+        setupGlobalExceptionHandler()
+        initializeCore()
+        initializeModules()
+        optimizePerformance()
+
+        Log.i(
+            TAG,
+            "✅ Initialization Complete | Version ${BuildConfig.APP_VERSION} | ${BuildConfig.BUILD_TYPE}"
+        )
     }
 
-    /**
-     * 🔧 Phase 1: Core Foundation Setup
-     */
-    private fun initializeFoundation() {
-        Log.d(TAG, "🏗 Initializing Core Foundation...")
-        
-        // Initialize thread pools and executors
+    // ---------------------------------------------------------
+    // PHASE 1 — CORE FOUNDATION
+    // ---------------------------------------------------------
+
+    private fun initializeCore() {
+        Log.d(TAG, "🏗 Initializing Core Foundation…")
+
+        // Thread Pools
         AppExecutors.init()
-        
-        // Set app theme based on system
+
+        // Auto UI Theme
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-        
-        Log.d(TAG, "✅ Core Foundation Ready")
+
+        Log.d(TAG, "✔ Core Foundation Ready")
     }
 
-    /**
-     * 🎯 Phase 2: Feature Modules Initialization
-     */
-    private fun initializeFeatureModules() {
-        Log.d(TAG, "🎯 Initializing Feature Modules...")
-        
-        // AI Engine with optimized loading
-        initializeAIModules()
-        
-        // Image Processing Engine
-        initializeImageEngine()
-        
-        Log.d(TAG, "✅ Feature Modules Ready")
+    // ---------------------------------------------------------
+    // PHASE 2 — MODULE INITIALIZATION
+    // ---------------------------------------------------------
+
+    private fun initializeModules() {
+        Log.d(TAG, "🎯 Initializing Feature Modules…")
+
+        initAI()
+        initImageEngine()
+
+        Log.d(TAG, "✔ Feature Modules Ready")
     }
 
-    /**
-     * ⚡ Phase 3: Performance Optimization
-     */
-    private fun initializePerformanceTuning() {
-        Log.d(TAG, "⚡ Applying Performance Optimizations...")
-        
-        // Memory optimization based on device capabilities
-        if (isLowRamDevice()) {
-            Log.w(TAG, "📉 Low RAM Device Detected - Enabling Lite Mode")
-            enableLiteMode()
-        } else {
-            Log.i(TAG, "📈 High Performance Mode Activated")
-        }
-        
-        Log.d(TAG, "✅ Performance Optimization Complete")
-    }
+    private fun initAI() {
+        Log.d(TAG, "🤖 Loading AI Models…")
 
-    /**
-     * 🤖 AI Modules Initialization
-     */
-    private fun initializeAIModules() {
-        Log.d(TAG, "🧠 Loading AI Intelligence Engine...")
-        
         AIModelManager.initialize(
             context = this,
             enableLowRamMode = isLowRamDevice(),
             loadEssentialOnly = true,
-            onProgress = { model, progress ->
-                Log.d(TAG, "📦 AI Model Loading: $model - $progress%")
+            onProgress = { name, progress ->
+                Log.d(TAG, "⚙ Loading Model: $name — $progress%")
             }
         )
-        
-        Log.i(TAG, "✅ AI Engine Ready")
+
+        Log.i(TAG, "✔ AI Engine Ready")
     }
 
-    /**
-     * 🖼 Image Processing Engine Setup
-     */
-    private fun initializeImageEngine() {
-        Log.d(TAG, "🎨 Initializing Image Processing Engine...")
-        
+    private fun initImageEngine() {
+        Log.d(TAG, "🎨 Initializing Image Engine…")
+
         ImageEngine.initialize()
-        Log.i(TAG, "✅ Image Engine Ready")
+
+        Log.i(TAG, "✔ Image Engine Ready")
     }
 
-    /**
-     * 🛡 Advanced Exception Handling & Crash Prevention
-     */
-    private fun setupExceptionHandling() {
-        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
-        
-        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            Log.e(TAG, "💥 Critical Exception in ${thread.name}:", throwable)
-            defaultHandler?.uncaughtException(thread, throwable)
+    // ---------------------------------------------------------
+    // PHASE 3 — PERFORMANCE OPTIMIZATION
+    // ---------------------------------------------------------
+
+    private fun optimizePerformance() {
+        Log.d(TAG, "⚡ Optimizing Performance…")
+
+        if (isLowRamDevice()) {
+            enableLiteMode()
+            Log.w(TAG, "📉 Low RAM Mode Enabled")
+        } else {
+            Log.i(TAG, "📈 High Performance Mode Enabled")
+        }
+
+        Log.d(TAG, "✔ Performance Optimization Complete")
+    }
+
+    private fun enableLiteMode() {
+        System.gc()
+        AIModelManager.reduceMemoryUsage()
+        ImageEngine.reduceCacheSize(0.5)
+    }
+
+    // ---------------------------------------------------------
+    // CRASH PROTECTION
+    // ---------------------------------------------------------
+
+    private fun setupGlobalExceptionHandler() {
+        val originalHandler = Thread.getDefaultUncaughtExceptionHandler()
+
+        Thread.setDefaultUncaughtExceptionHandler { thread, error ->
+            Log.e(TAG, "💥 FATAL EXCEPTION in ${thread.name}", error)
+            originalHandler?.uncaughtException(thread, error)
         }
     }
 
-    /**
-     * 📉 Lite Mode for Low-RAM Devices
-     */
-    private fun enableLiteMode() {
-        System.gc()
-        Log.i(TAG, "🔄 Lite Mode: Optimized for low memory devices")
-    }
+    // ---------------------------------------------------------
+    // MEMORY MANAGEMENT
+    // ---------------------------------------------------------
 
-    /**
-     * 🔍 Device Capability Check
-     */
     private fun isLowRamDevice(): Boolean {
-        val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
-        return activityManager.isLowRamDevice
+        val am = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        return am.isLowRamDevice
     }
 
     override fun onLowMemory() {
         super.onLowMemory()
-        Log.w(TAG, "🚨 Low Memory Warning - Cleaning caches")
+        Log.w(TAG, "🚨 LOW MEMORY — Cleaning Cache…")
         ImageEngine.clearCache()
         AIModelManager.reduceMemoryUsage()
         System.gc()
@@ -162,56 +156,60 @@ class AdvancedCameraApp : Application() {
 
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
-        
+
         when (level) {
             ComponentCallbacks2.TRIM_MEMORY_COMPLETE -> {
-                Log.w(TAG, "🧹 TRIM_MEMORY_COMPLETE - Aggressive cleanup")
+                Log.w(TAG, "🧹 Aggressive Cleanup Triggered")
                 ImageEngine.clearCache()
                 AIModelManager.unloadNonEssentialModels()
             }
+
             ComponentCallbacks2.TRIM_MEMORY_MODERATE -> {
-                Log.d(TAG, "🧹 TRIM_MEMORY_MODERATE - Moderate cleanup")
+                Log.d(TAG, "♻ Moderate Memory Trim")
                 ImageEngine.reduceCacheSize(0.5)
             }
         }
     }
 
     override fun onTerminate() {
-        Log.i(TAG, "🛑 Application Termination Started...")
+        Log.i(TAG, "🛑 Shutting Down Application…")
+
         AppExecutors.shutdown()
         AIModelManager.shutdown()
         ImageEngine.shutdown()
         unregisterActivityLifecycleCallbacks(AppLifecycleTracker)
-        _instance = null
+
+        instanceRef = null
         super.onTerminate()
-        Log.i(TAG, "✅ Application Cleanup Completed")
+
+        Log.i(TAG, "✔ Application Terminated Cleanly")
     }
 }
 
-/**
- * 📊 App Lifecycle Tracker
- */
+/* ---------------------------------------------------------
+   📊 Global App Lifecycle Tracker
+   --------------------------------------------------------- */
+
 object AppLifecycleTracker : Application.ActivityLifecycleCallbacks {
-    private var foregroundActivities = 0
-    val isAppInForeground: Boolean get() = foregroundActivities > 0
-    
-    override fun onActivityStarted(activity: android.app.Activity) {
-        foregroundActivities++
-        if (foregroundActivities == 1) {
-            Log.d("AppLifecycle", "🟢 App entered foreground")
-        }
+
+    private var foregroundCount = 0
+    val isForeground: Boolean get() = foregroundCount > 0
+
+    override fun onActivityStarted(activity: Activity) {
+        foregroundCount++
+        if (foregroundCount == 1)
+            Log.d("AppLifecycle", "🟢 App is now in FOREGROUND")
     }
-    
-    override fun onActivityStopped(activity: android.app.Activity) {
-        foregroundActivities--
-        if (foregroundActivities == 0) {
-            Log.d("AppLifecycle", "🔴 App entered background")
-        }
+
+    override fun onActivityStopped(activity: Activity) {
+        foregroundCount--
+        if (foregroundCount == 0)
+            Log.d("AppLifecycle", "🔴 App moved to BACKGROUND")
     }
-    
-    override fun onActivityCreated(activity: android.app.Activity, savedInstanceState: android.os.Bundle?) {}
-    override fun onActivityResumed(activity: android.app.Activity) {}
-    override fun onActivityPaused(activity: android.app.Activity) {}
-    override fun onActivitySaveInstanceState(activity: android.app.Activity, outState: android.os.Bundle) {}
-    override fun onActivityDestroyed(activity: android.app.Activity) {}
+
+    override fun onActivityCreated(a: Activity, b: Bundle?) {}
+    override fun onActivityResumed(a: Activity) {}
+    override fun onActivityPaused(a: Activity) {}
+    override fun onActivitySaveInstanceState(a: Activity, b: Bundle) {}
+    override fun onActivityDestroyed(a: Activity) {}
 }
