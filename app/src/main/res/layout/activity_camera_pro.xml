@@ -1,380 +1,502 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000000">
 
-    <!-- 🎥 Camera Preview Surface -->
+    <!-- 🎥 PRIMARY CAMERA PREVIEW (70% Screen) -->
     <TextureView
         android:id="@+id/texture_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:contentDescription="Camera Preview"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/bottom_controls_container"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- 📊 Top Status Bar -->
+    <!-- 🔝 TOP STATUS BAR -->
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
+        android:id="@+id/top_status_bar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:background="#80000000"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:gravity="center_vertical">
+        android:background="@drawable/bg_top_gradient"
+        android:paddingVertical="12dp"
+        android:paddingHorizontal="16dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
+        <!-- App Title -->
         <TextView
-            android:id="@+id/tv_status"
+            android:id="@+id/tv_app_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="🚀 DSLR Camera Pro - Ready"
+            android:text="📸 DSLR Pro"
             android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:gravity="start" />
 
-        <TextView
+        <!-- Recording Indicator with Animation -->
+        <com.airbnb.lottie.LottieAnimationView
             android:id="@+id/recording_indicator"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="● REC"
-            android:textColor="#FF4444"
-            android:textSize="12sp"
+            android:layout_width="80dp"
+            android:layout_height="24dp"
             android:visibility="gone"
-            android:background="#30FF4444"
-            android:padding="4dp"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp" />
+            app:lottie_rawRes="@raw/recording_animation"
+            app:lottie_autoPlay="true"
+            app:lottie_loop="true" />
 
-    </LinearLayout>
-
-    <!-- 🎨 LUT Selection Panel (Pro Mode) -->
-    <LinearLayout
-        android:id="@+id/lut_panel"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_above="@id/control_panel"
-        android:orientation="horizontal"
-        android:background="#80000000"
-        android:padding="12dp"
-        android:visibility="gone">
-
+        <!-- Battery & Time -->
         <TextView
+            android:id="@+id/tv_battery_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="🎨 LUT:"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            android:layout_marginEnd="8dp"
-            android:gravity="center_vertical" />
-
-        <Spinner
-            android:id="@+id/spinner_lut"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@drawable/btn_circle"
-            android:popupBackground="#80000000" />
-
+            android:text="🔋 78% • 14:30"
+            android:textColor="#CCCCCC"
+            android:textSize="12sp"
+            android:layout_marginStart="12dp" />
     </LinearLayout>
 
-    <!-- 🎛️ Manual Controls Panel -->
-    <LinearLayout
-        android:id="@+id/control_panel"
-        android:layout_width="match_parent"
+    <!-- ⚡ QUICK SETTINGS FLOATING PANEL -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/quick_settings_panel"
+        android:layout_width="56dp"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
+        android:layout_marginTop="80dp"
+        android:layout_marginEnd="12dp"
+        app:cardBackgroundColor="#B3000000"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="8dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:paddingVertical="8dp">
+
+            <!-- Flash Button with State Indicator -->
+            <FrameLayout
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginBottom="12dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_flash"
+                    style="@style/IconButtonStyle"
+                    android:backgroundTint="@color/flash_auto"
+                    app:icon="@drawable/ic_flash_auto_animated"
+                    app:iconTint="@android:color/white" />
+
+                <!-- Flash Mode Badge -->
+                <TextView
+                    android:id="@+id/badge_flash_mode"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_gravity="top|end"
+                    android:background="@drawable/badge_circle_accent"
+                    android:text="A"
+                    android:textColor="#FFFFFF"
+                    android:textSize="8sp"
+                    android:gravity="center" />
+            </FrameLayout>
+
+            <!-- HDR Toggle -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_hdr"
+                style="@style/IconButtonStyle"
+                android:layout_marginBottom="12dp"
+                android:backgroundTint="#20FFFFFF"
+                app:icon="@drawable/ic_hdr"
+                app:iconTint="@android:color/white" />
+
+            <!-- Timer Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_timer"
+                style="@style/IconButtonStyle"
+                android:layout_marginBottom="12dp"
+                android:backgroundTint="#20FFFFFF"
+                app:icon="@drawable/ic_timer"
+                app:iconTint="@android:color/white" />
+
+            <!-- Grid Lines -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_grid"
+                style="@style/IconButtonStyle"
+                android:backgroundTint="#20FFFFFF"
+                app:icon="@drawable/ic_grid"
+                app:iconTint="@android:color/white" />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- 🎚️ MODE SELECTOR WITH VISUAL FEEDBACK -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/mode_selector_card"
+        android:layout_width="0dp"
+        android:layout_height="64dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        app:cardBackgroundColor="#B3000000"
+        app:cardCornerRadius="32dp"
+        app:cardElevation="6dp"
+        app:layout_constraintTop_toBottomOf="@id/top_status_bar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tab_modes"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:tabBackground="@drawable/tab_selector"
+            app:tabGravity="center"
+            app:tabIndicatorHeight="0dp"
+            app:tabRippleColor="@null"
+            app:tabTextColor="@color/tab_text_selector">
+
+            <!-- Auto Mode with Icon -->
+            <com.google.android.material.tabs.TabItem
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_mode_auto" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="AUTO"
+                        android:textSize="10sp"
+                        android:textColor="#FFFFFF"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+            </com.google.android.material.tabs.TabItem>
+
+            <!-- Similar tabs for PRO, NIGHT, PORTRAIT, VIDEO -->
+        </com.google.android.material.tabs.TabLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- 📊 FLOATING PRO CONTROLS BUTTON -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_expand_controls"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="120dp"
+        android:src="@drawable/ic_expand_pro"
+        app:backgroundTint="#4CAF50"
+        app:elevation="8dp"
+        app:layout_constraintBottom_toBottomOf="@id/texture_view"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- 🎛️ EXPANDABLE PRO CONTROLS PANEL -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/pro_controls_panel"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="#CC000000"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="12dp"
+        app:layout_constraintBottom_toTopOf="@id/bottom_controls_container"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/mode_selector_card">
+
+        <androidx.core.widget.NestedScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- LUT Selection -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🎨 LUT"
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:layout_marginEnd="12dp" />
+
+                    <Spinner
+                        android:id="@+id/spinner_lut"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/spinner_background"
+                        android:popupBackground="#CC000000" />
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_info"
+                        android:layout_marginStart="8dp"
+                        android:tint="#4CAF50" />
+                </LinearLayout>
+
+                <!-- Zoom Control with Visual Feedback -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginBottom="20dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_zoom_in"
+                            android:tint="#4CAF50"
+                            android:layout_marginEnd="12dp" />
+
+                        <SeekBar
+                            android:id="@+id/seek_zoom"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:max="100"
+                            android:progress="0"
+                            android:progressDrawable="@drawable/seekbar_progress_gradient"
+                            android:thumb="@drawable/thumb_zoom" />
+
+                        <TextView
+                            android:id="@+id/tv_zoom_value"
+                            android:layout_width="50dp"
+                            android:layout_height="wrap_content"
+                            android:text="1.0x"
+                            android:textColor="#4CAF50"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:gravity="center"
+                            android:layout_marginStart="12dp" />
+                    </LinearLayout>
+
+                    <!-- Zoom Preset Buttons -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:layout_marginTop="8dp">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:layout_width="0dp"
+                            android:layout_height="32dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="4dp"
+                            android:text="1x"
+                            android:textSize="12sp"
+                            style="@style/PresetButtonStyle" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:layout_width="0dp"
+                            android:layout_height="32dp"
+                            android:layout_weight="1"
+                            android:layout_marginHorizontal="4dp"
+                            android:text="2x"
+                            android:textSize="12sp"
+                            style="@style/PresetButtonStyle" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:layout_width="0dp"
+                            android:layout_height="32dp"
+                            android:layout_weight="1"
+                            android:layout_marginHorizontal="4dp"
+                            android:text="5x"
+                            android:textSize="12sp"
+                            style="@style/PresetButtonStyle" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:layout_width="0dp"
+                            android:layout_height="32dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="4dp"
+                            android:text="10x"
+                            android:textSize="12sp"
+                            style="@style/PresetButtonStyle" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Similar sections for ISO, Exposure, Focus with modern design -->
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+    </androidx.cardview.widget.CardView>
+
+    <!-- 📱 BOTTOM PRIMARY CONTROLS -->
+    <LinearLayout
+        android:id="@+id/bottom_controls_container"
+        android:layout_width="0dp"
+        android:layout_height="100dp"
         android:orientation="vertical"
-        android:background="#E6000000"
-        android:padding="16dp">
+        android:background="@drawable/bg_bottom_gradient"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- 🔍 Zoom Control -->
-        <LinearLayout
+        <!-- Gallery Preview Strip -->
+        <HorizontalScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="12dp">
+            android:layout_height="40dp"
+            android:paddingHorizontal="8dp"
+            android:visibility="gone"
+            android:id="@+id/gallery_preview_strip">
 
-            <TextView
+            <LinearLayout
+                android:id="@+id/gallery_preview_container"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🔍"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:layout_marginEnd="8dp" />
+                android:layout_height="match_parent"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
 
-            <SeekBar
-                android:id="@+id/seek_zoom"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:max="100"
-                android:progress="0"
-                android:progressDrawable="@drawable/seekbar_progress"
-                android:thumb="@drawable/thumb_seekbar" />
-
-            <TextView
-                android:id="@+id/tv_zoom_value"
-                android:layout_width="40dp"
-                android:layout_height="wrap_content"
-                android:text="1.0x"
-                android:textColor="#4CAF50"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:layout_marginStart="8dp" />
-
-        </LinearLayout>
-
-        <!-- ⚙️ ISO Control -->
+        <!-- Primary Action Buttons -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="12dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="⚙️"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:layout_marginEnd="8dp" />
-
-            <SeekBar
-                android:id="@+id/seek_iso"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:max="100"
-                android:progress="1"
-                android:progressDrawable="@drawable/seekbar_progress"
-                android:thumb="@drawable/thumb_seekbar" />
-
-            <TextView
-                android:id="@+id/tv_iso_value"
-                android:layout_width="40dp"
-                android:layout_height="wrap_content"
-                android:text="100"
-                android:textColor="#2196F3"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:layout_marginStart="8dp" />
-
-        </LinearLayout>
-
-        <!-- ⏱️ Exposure Control -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="12dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="⏱️"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:layout_marginEnd="8dp" />
-
-            <SeekBar
-                android:id="@+id/seek_exposure"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:max="6"
-                android:progress="3"
-                android:progressDrawable="@drawable/seekbar_progress"
-                android:thumb="@drawable/thumb_seekbar" />
-
-            <TextView
-                android:id="@+id/tv_exposure_value"
-                android:layout_width="40dp"
-                android:layout_height="wrap_content"
-                android:text="0"
-                android:textColor="#FF9800"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:layout_marginStart="8dp" />
-
-        </LinearLayout>
-
-        <!-- 🎯 Focus Control -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🎯"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:layout_marginEnd="8dp" />
-
-            <SeekBar
-                android:id="@+id/seek_focus"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:max="100"
-                android:progress="50"
-                android:progressDrawable="@drawable/seekbar_progress"
-                android:thumb="@drawable/thumb_seekbar" />
-
-            <TextView
-                android:id="@+id/tv_focus_value"
-                android:layout_width="40dp"
-                android:layout_height="wrap_content"
-                android:text="50%"
-                android:textColor="#E91E63"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:layout_marginStart="8dp" />
-
-        </LinearLayout>
-
-        <!-- 📱 Bottom Button Bar -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:orientation="horizontal"
             android:gravity="center"
-            android:layout_marginTop="8dp">
+            android:paddingHorizontal="24dp">
 
-            <!-- 🖼️ Gallery Button -->
-            <ImageButton
+            <!-- Gallery -->
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_gallery"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="@drawable/btn_circle"
-                android:src="@drawable/ic_gallery_modern"
-                android:layout_marginEnd="20dp"
-                android:contentDescription="Gallery" />
-
-          <ImageButton
-          android:id="@+id/btn_video_record"
-          android:layout_width="56dp"
-          android:layout_height="56dp"
-          android:background="@drawable/btn_video_record"
-          android:src="@drawable/ic_video_record"
-          android:layout_marginStart="20dp"
-          android:contentDescription="Video Record" />
-       
-            <!-- Flash Button -->
-         <ImageButton
-         android:id="@+id/btn_flash"
-         android:layout_width="48dp"
-         android:layout_height="48dp"
-         android:layout_alignParentEnd="true"
-         android:layout_marginTop="16dp"
-         android:layout_marginEnd="16dp"
-         android:background="@drawable/btn_circle"
-         android:src="@drawable/ic_flash_auto"
-         android:contentDescription="Flash Mode" />
-         
-            <!-- 🔄 Mode Switch Button -->
-            <ImageButton
-                android:id="@+id/btn_mode_switch"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="@drawable/btn_circle"
-                android:src="@drawable/ic_mode_switch"
-                android:layout_marginEnd="20dp"
-                android:contentDescription="Switch Mode" />
-
-            <!-- 📸 Main Capture Button -->
-            <ImageButton
-                android:id="@+id/btn_capture"
-                android:layout_width="72dp"
-                android:layout_height="72dp"
-                android:background="@drawable/btn_capture_dslr"
-                android:layout_marginStart="16dp"
+                style="@style/CircleButtonStyle"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
                 android:layout_marginEnd="16dp"
-                android:contentDescription="Capture" />
+                app:icon="@drawable/ic_gallery_modern"
+                app:iconSize="24dp" />
 
-            <!-- 🔁 Switch Camera Button -->
-            <ImageButton
+            <!-- Video Record with Pulse Animation -->
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="24dp">
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btn_video_record"
+                    android:layout_width="68dp"
+                    android:layout_height="68dp"
+                    android:backgroundTint="@color/recording_red"
+                    app:elevation="10dp"
+                    app:fabSize="normal" />
+
+                <!-- Recording Timer -->
+                <TextView
+                    android:id="@+id/tv_recording_timer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|center"
+                    android:layout_marginBottom="-20dp"
+                    android:text="00:00"
+                    android:textColor="#FF4444"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+            </FrameLayout>
+
+            <!-- Main Capture Button with Shutter Animation -->
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <!-- Outer Ring -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_capture_outer"
+                    style="@style/CircleButtonStyle"
+                    android:layout_width="88dp"
+                    android:layout_height="88dp"
+                    android:backgroundTint="#40FFFFFF" />
+
+                <!-- Inner Shutter -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_capture"
+                    style="@style/CircleButtonStyle"
+                    android:layout_width="72dp"
+                    android:layout_height="72dp"
+                    android:layout_gravity="center"
+                    android:backgroundTint="#FFFFFF"
+                    app:icon="@drawable/ic_shutter"
+                    app:iconTint="#000000" />
+            </FrameLayout>
+
+            <!-- Switch Camera with Flip Animation -->
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_switch_camera"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="@drawable/btn_circle"
-                android:src="@drawable/ic_switch_camera_modern"
-                android:layout_marginStart="20dp"
-                android:contentDescription="Switch Camera" />
+                style="@style/CircleButtonStyle"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_marginStart="24dp"
+                app:icon="@drawable/ic_switch_camera_modern"
+                app:iconSize="24dp" />
 
-            <!-- ⚙️ Settings Button -->
-            <ImageButton
+            <!-- Settings -->
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_settings"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="@drawable/btn_circle"
-                android:src="@drawable/ic_settings_modern"
-                android:layout_marginStart="20dp"
-                android:contentDescription="Settings" />
-
+                style="@style/CircleButtonStyle"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_marginStart="16dp"
+                app:icon="@drawable/ic_settings_modern"
+                app:iconSize="24dp" />
         </LinearLayout>
-
     </LinearLayout>
 
-    <!-- 🎚️ Mode Tabs -->
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tab_modes"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_above="@id/lut_panel"
-        android:background="#80000000"
-        app:tabTextColor="#CCFFFFFF"
-        app:tabSelectedTextColor="#4CAF50"
-        app:tabIndicatorColor="#4CAF50"
-        app:tabIndicatorHeight="3dp"
-        app:tabMode="scrollable"
-        app:tabPaddingStart="16dp"
-        app:tabPaddingEnd="16dp">
-
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="AUTO" />
-
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="PRO" />
-
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="NIGHT" />
-
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="PORTRAIT" />
-
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="VIDEO" />
-
-    </com.google.android.material.tabs.TabLayout>
-
-    <!-- 🎯 Focus Indicator -->
-    <ImageView
+    <!-- 🎯 FOCUS INDICATOR WITH ANIMATION -->
+    <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/focus_indicator"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:layout_centerInParent="true"
-        android:src="@drawable/ic_focus_indicator"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
         android:visibility="invisible"
-        android:contentDescription="Focus Indicator" />
+        app:lottie_rawRes="@raw/focus_lock_animation"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-</RelativeLayout>
+    <!-- 📸 CAPTURE FEEDBACK OVERLAY -->
+    <ImageView
+        android:id="@+id/capture_feedback"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:visibility="gone"
+        android:alpha="0.7"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
