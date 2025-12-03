@@ -415,6 +415,7 @@ class FeatureManager private constructor() {
             
             // ✅ Simple sharpening effect (placeholder for real deblur)
             applySharpening(result, 1.5f)
+            result
             
         } catch (e: Exception) {
             Log.e(TAG, "❌ Deblur processing failed: ${e.message}")
