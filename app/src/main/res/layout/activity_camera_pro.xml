@@ -405,6 +405,15 @@
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="24dp">
 
+                <com.airbnb.lottie.LottieAnimationView
+             android:id="@+id/recording_indicator"
+             android:layout_width="80dp"
+             android:layout_height="24dp"
+             android:visibility="gone"
+             app:lottie_rawRes="@raw/recording_animation"
+             app:lottie_autoPlay="true"
+             app:lottie_loop="true" />
+              
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/btn_video_record"
                     android:layout_width="68dp"
