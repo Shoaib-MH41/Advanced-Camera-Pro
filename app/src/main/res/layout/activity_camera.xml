@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000000"
-    android:id="@+id/main_container">  <!-- ✅ Container ID شامل کیا -->
+    android:id="@+id/main_container">
 
     <!-- 🎥 PRIMARY CAMERA PREVIEW (70% Screen) -->
     <TextureView
@@ -18,7 +18,7 @@
         app:layout_constraintBottom_toTopOf="@+id/bottom_controls_container"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:visibility="visible" />  <!-- ✅ Visibility واضح کی -->
+        android:visibility="visible" />
 
     <!-- 🔝 TOP STATUS BAR -->
     <LinearLayout
@@ -45,9 +45,9 @@
             android:textStyle="bold"
             android:gravity="start" />
 
-        <!-- ✅ Status Display (یہ آپ کے Kotlin میں tv_status ہے) -->
+        <!-- ✅ Status Display -->
         <TextView
-            android:id="@+id/tv_status"  <!-- ✅ یہی وہ tv_status ہے جو Kotlin میں استعمال ہو رہا ہے -->
+            android:id="@+id/tv_status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Ready"
@@ -56,9 +56,9 @@
             android:textStyle="bold"
             android:layout_marginHorizontal="8dp" />
 
-        <!-- ✅ Recording Indicator (یہ آپ کے Kotlin میں recording_indicator ہے) -->
+        <!-- ✅ Recording Indicator -->
         <TextView
-            android:id="@+id/recording_indicator"  <!-- ✅ یہی وہ recording_indicator ہے -->
+            android:id="@+id/recording_indicator"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="🔴 REC"
@@ -109,9 +109,9 @@
             android:gravity="center_horizontal"
             android:paddingVertical="8dp">
 
-            <!-- ✅ Mode Switch Button (یہ آپ کے Kotlin میں btn_mode_switch ہے) -->
+            <!-- ✅ Mode Switch Button -->
             <Button
-                android:id="@+id/btn_mode_switch"  <!-- ✅ یہی وہ btn_mode_switch ہے -->
+                android:id="@+id/btn_mode_switch"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_marginBottom="12dp"
@@ -240,9 +240,9 @@
         </com.google.android.material.tabs.TabLayout>
     </androidx.cardview.widget.CardView>
 
-    <!-- ✅ CONTROL PANEL (یہ آپ کے Kotlin میں control_panel ہے) -->
+    <!-- ✅ CONTROL PANEL -->
     <LinearLayout
-        android:id="@+id/control_panel"  <!-- ✅ یہی وہ control_panel ہے -->
+        android:id="@+id/control_panel"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="vertical"
@@ -256,7 +256,7 @@
         android:layout_marginHorizontal="16dp"
         android:elevation="8dp">
 
-        <!-- Control panel content can be added here if needed -->
+        <!-- Control panel content -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -266,9 +266,9 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- ✅ LUT PANEL (یہ آپ کے Kotlin میں lut_panel ہے) -->
+    <!-- ✅ LUT PANEL -->
     <LinearLayout
-        android:id="@+id/lut_panel"  <!-- ✅ یہی وہ lut_panel ہے -->
+        android:id="@+id/lut_panel"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="vertical"
@@ -290,8 +290,6 @@
             android:textSize="14sp"
             android:textStyle="bold"
             android:layout_marginBottom="8dp" />
-
-        <!-- LUT content will be controlled programmatically -->
     </LinearLayout>
 
     <!-- 📊 FLOATING PRO CONTROLS BUTTON -->
@@ -564,12 +562,12 @@
                         android:id="@+id/tv_focus_value"
                         android:layout_width="50dp"
                         android:layout_height="wrap_content"
-                            android:text="50%"
-                            android:textColor="#E91E63"
-                            android:textSize="14sp"
-                            android:textStyle="bold"
-                            android:gravity="center"
-                            android:layout_marginStart="12dp" />
+                        android:text="50%"
+                        android:textColor="#E91E63"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:layout_marginStart="12dp" />
                 </LinearLayout>
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
@@ -645,8 +643,7 @@
                     android:layout_width="88dp"
                     android:layout_height="88dp"
                     android:background="@drawable/btn_capture_dslr"
-                    android:text=""
-                    android:visibility="visible" />
+                    android:text="" />
 
                 <!-- Inner Shutter -->
                 <Button
@@ -655,8 +652,7 @@
                     android:layout_height="72dp"
                     android:layout_gravity="center"
                     android:background="@drawable/btn_capture_modern"
-                    android:text=""
-                    android:textColor="#000000" />
+                    android:text="" />
             </FrameLayout>
 
             <!-- Switch Camera -->
