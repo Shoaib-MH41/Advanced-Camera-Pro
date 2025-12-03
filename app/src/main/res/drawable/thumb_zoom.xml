@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <animated-selector xmlns:android="http://schemas.android.com/apk/res/android">
-    
-    <item android:id="@+id/normal" android:drawable="@drawable/thumb_normal" />
-    <item android:id="@+id/pressed" android:drawable="@drawable/thumb_pressed" />
-    
-    <transition android:fromId="@+id/normal" android:toId="@+id/pressed">
+
+    <item
+        android:id="@+id/normal"
+        android:drawable="@drawable/thumb_normal" />
+
+    <item
+        android:id="@+id/pressed"
+        android:drawable="@drawable/thumb_pressed" />
+
+    <transition
+        android:fromId="@id/normal"
+        android:toId="@id/pressed">
         <animated-vector android:drawable="@drawable/avd_thumb_press" />
     </transition>
-    
+
 </animated-selector>
