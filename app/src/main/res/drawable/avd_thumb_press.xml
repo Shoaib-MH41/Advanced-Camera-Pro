@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+
+    <vector
+        android:width="24dp"
+        android:height="24dp"
+        android:viewportWidth="24"
+        android:viewportHeight="24"
+        android:drawable="@drawable/thumb_normal" />
+
+    <target android:name="thumbCircle">
+        <aapt:attr name="android:animation">
+            <set android:ordering="together">
+                <objectAnimator
+                    android:propertyName="scaleX"
+                    android:duration="120"
+                    android:valueFrom="1.0"
+                    android:valueTo="0.85"
+                    android:interpolator="@android:interpolator/accelerate_decelerate" />
+
+                <objectAnimator
+                    android:propertyName="scaleY"
+                    android:duration="120"
+                    android:valueFrom="1.0"
+                    android:valueTo="0.85"
+                    android:interpolator="@android:interpolator/accelerate_decelerate" />
+            </set>
+        </aapt:attr>
+    </target>
+
+</animated-vector>
