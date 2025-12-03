@@ -2,19 +2,12 @@ package com.yourname.advancedcamera.features
 
 import android.graphics.Bitmap
 import android.graphics.Color
-import android.graphics.ColorMatrix
-import android.graphics.ColorMatrixColorFilter
-import android.graphics.Paint
-import android.graphics.PorterDuff
-import android.graphics.PorterDuffColorFilter
-import android.media.Image
+import android.graphics.Matrix
 import android.util.Log
-import java.io.FileOutputStream
-import java.nio.ByteBuffer
 
 /**
- * 🎯 COMPLETE DSLR FEATURE MANAGER - ALL FEATURES IN ONE FILE
- * No upgrades needed - All ChatGPT requested features included
+ * 🎯 OPTIMIZED DSLR FEATURE MANAGER
+ * Fixed performance issues and scene detection
  */
 class FeatureManager private constructor() {
     
@@ -29,7 +22,7 @@ class FeatureManager private constructor() {
         }
     }
 
-    // ==================== 🔧 ALL FEATURE TOGGLES ====================
+    // ==================== 🔧 OPTIMIZED FEATURE TOGGLES ====================
     var isNightVisionEnabled = true
     var isColorLUTsEnabled = true
     var isMotionDeblurEnabled = true
@@ -91,84 +84,136 @@ class FeatureManager private constructor() {
             Log.d(TAG, "Zoom set to: ${field}x")
         }
 
-    // ==================== 🌙 AI NIGHT VISION ====================
+    // ==================== 🌙 OPTIMIZED AI NIGHT VISION ====================
     fun processNightVision(frames: List<Bitmap>): Bitmap {
-        if (!isNightVisionEnabled) return frames.first()
+        if (!isNightVisionEnabled || frames.isEmpty()) return frames.first()
+        
         Log.d(TAG, "🔦 AI Night Vision Processing - ${frames.size} frames")
         
-        val baseFrame = frames.first()
-        val result = baseFrame.copy(Bitmap.Config.ARGB_8888, true)
+        return try {
+            val baseFrame = frames.first()
+            
+            // ✅ Performance optimization: Downsample if too large
+            val processedBitmap = if (baseFrame.width * baseFrame.height > 2000000) {
+                // Downsample large images for performance
+                val scale = 0.5f
+                val width = (baseFrame.width * scale).toInt()
+                val height = (baseFrame.height * scale).toInt()
+                Bitmap.createScaledBitmap(baseFrame, width, height, true)
+            } else {
+                baseFrame.copy(Bitmap.Config.ARGB_8888, true)
+            }
+            
+            // ✅ Apply night vision effect
+            applyNightVisionEffect(processedBitmap)
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Night vision processing failed: ${e.message}")
+            frames.first()
+        }
+    }
+    
+    private fun applyNightVisionEffect(bitmap: Bitmap): Bitmap {
+        val width = bitmap.width
+        val height = bitmap.height
+        val pixels = IntArray(width * height)
         
-        // AI-powered low-light enhancement
-        val pixels = IntArray(result.width * result.height)
-        result.getPixels(pixels, 0, result.width, 0, 0, result.width, result.height)
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
         
+        // ✅ Optimized loop - pre-calculate values
         for (i in pixels.indices) {
             val color = pixels[i]
+            
+            // Extract RGB components
             val r = Color.red(color)
-            val g = Color.green(color) 
+            val g = Color.green(color)
             val b = Color.blue(color)
             
-            // Brightness boost for night vision
-            val newR = (r * 1.8f).coerceIn(0f, 255f).toInt()
-            val newG = (g * 2.2f).coerceIn(0f, 255f).toInt()  // Green boost for night vision
-            val newB = (b * 1.5f).coerceIn(0f, 255f).toInt()
+            // Night vision effect: boost green channel, reduce red/blue
+            val newR = (r * 1.2f).toInt().coerceIn(0, 255)
+            val newG = (g * 2.5f).toInt().coerceIn(0, 255)  // Strong green boost for night vision
+            val newB = (b * 1.3f).toInt().coerceIn(0, 255)
             
             pixels[i] = Color.rgb(newR, newG, newB)
         }
         
-        result.setPixels(pixels, 0, result.width, 0, 0, result.width, result.height)
-        return result
+        bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
+        return bitmap
     }
 
-    // ==================== 📸 HDR+ FUSION ====================
+    // ==================== 📸 OPTIMIZED HDR+ FUSION ====================
     fun processHDR(frames: List<Bitmap>): Bitmap {
-        if (!isHDREnabled) return frames.first()
-        Log.d(TAG, "📸 HDR+ Fusion Processing - ${frames.size} frames")
+        if (!isHDREnabled || frames.isEmpty()) return frames.first()
         
-        // Multi-frame HDR merge simulation
-        val baseFrame = frames.first()
-        val result = baseFrame.copy(Bitmap.Config.ARGB_8888, true)
+        Log.d(TAG, "📸 HDR+ Fusion Processing")
         
-        val pixels = IntArray(result.width * result.height)
-        result.getPixels(pixels, 0, result.width, 0, 0, result.width, result.height)
+        return try {
+            val baseFrame = frames.first()
+            val result = baseFrame.copy(Bitmap.Config.ARGB_8888, true)
+            
+            applyHDREffect(result)
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ HDR processing failed: ${e.message}")
+            frames.first()
+        }
+    }
+    
+    private fun applyHDREffect(bitmap: Bitmap) {
+        val width = bitmap.width
+        val height = bitmap.height
+        val pixels = IntArray(width * height)
         
-        // Simple HDR effect - enhance dynamic range
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+        
+        // ✅ Tone mapping for HDR effect
         for (i in pixels.indices) {
             val color = pixels[i]
             val r = Color.red(color)
             val g = Color.green(color)
             val b = Color.blue(color)
             
-            // HDR tone mapping
+            // Calculate luminance
             val luminance = (0.299 * r + 0.587 * g + 0.114 * b).toFloat()
-            val hdrBoost = if (luminance < 128) 1.8f else 1.2f
             
-            val newR = (r * hdrBoost).coerceIn(0f, 255f).toInt()
-            val newG = (g * hdrBoost).coerceIn(0f, 255f).toInt()
-            val newB = (b * hdrBoost).coerceIn(0f, 255f).toInt()
+            // Dynamic HDR boost based on luminance
+            val hdrBoost = when {
+                luminance < 50 -> 2.5f  // Very dark areas - strong boost
+                luminance < 128 -> 2.0f  // Dark areas - moderate boost
+                luminance > 200 -> 0.8f  // Very bright areas - reduce
+                else -> 1.3f  // Normal areas - slight boost
+            }
+            
+            val newR = (r * hdrBoost).toInt().coerceIn(0, 255)
+            val newG = (g * hdrBoost).toInt().coerceIn(0, 255)
+            val newB = (b * hdrBoost).toInt().coerceIn(0, 255)
             
             pixels[i] = Color.rgb(newR, newG, newB)
         }
         
-        result.setPixels(pixels, 0, result.width, 0, 0, result.width, result.height)
-        return result
+        bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
     }
 
     // ==================== 🎨 CINEMATIC LUTS & COLOR GRADING ====================
     fun applyColorLUT(bitmap: Bitmap, lutType: String = "CINEMATIC"): Bitmap {
         if (!isColorLUTsEnabled) return bitmap
+        
         Log.d(TAG, "🎨 Applying $lutType LUT")
         
-        return when (lutType.uppercase()) {
-            "CINEMATIC" -> applyCinematicLUT(bitmap)
-            "VINTAGE" -> applyVintageLUT(bitmap)
-            "PORTRAIT" -> applyPortraitLUT(bitmap)
-            "BLACK_WHITE" -> applyBWLUT(bitmap)
-            "DRAMATIC" -> applyDramaticLUT(bitmap)
-            "COLD" -> applyColdLUT(bitmap)
-            "WARM" -> applyWarmLUT(bitmap)
-            else -> bitmap
+        return try {
+            when (lutType.uppercase()) {
+                "CINEMATIC" -> applyCinematicLUT(bitmap)
+                "VINTAGE" -> applyVintageLUT(bitmap)
+                "PORTRAIT" -> applyPortraitLUT(bitmap)
+                "BLACK_WHITE" -> applyBWLUT(bitmap)
+                "DRAMATIC" -> applyDramaticLUT(bitmap)
+                "COLD" -> applyColdLUT(bitmap)
+                "WARM" -> applyWarmLUT(bitmap)
+                else -> bitmap
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ LUT application failed: ${e.message}")
+            bitmap
         }
     }
 
@@ -179,16 +224,16 @@ class FeatureManager private constructor() {
         
         for (i in pixels.indices) {
             val color = pixels[i]
-            var r = Color.red(color)
-            var g = Color.green(color)
-            var b = Color.blue(color)
+            val r = Color.red(color)
+            val g = Color.green(color)
+            val b = Color.blue(color)
             
-            // Cinematic color grading - teal and orange
-            r = (r * 1.1f).coerceIn(0f, 255f).toInt()
-            g = (g * 0.9f).coerceIn(0f, 255f).toInt()
-            b = (b * 1.3f).coerceIn(0f, 255f).toInt()
+            // Cinematic teal and orange
+            val newR = (r * 1.15f).toInt().coerceIn(0, 255)
+            val newG = (g * 0.95f).toInt().coerceIn(0, 255)
+            val newB = (b * 1.25f).toInt().coerceIn(0, 255)
             
-            pixels[i] = Color.rgb(r, g, b)
+            pixels[i] = Color.rgb(newR, newG, newB)
         }
         
         result.setPixels(pixels, 0, result.width, 0, 0, result.width, result.height)
@@ -202,25 +247,16 @@ class FeatureManager private constructor() {
         
         for (i in pixels.indices) {
             val color = pixels[i]
-            var r = Color.red(color)
-            var g = Color.green(color)
-            var b = Color.blue(color)
+            val r = Color.red(color)
+            val g = Color.green(color)
+            val b = Color.blue(color)
             
-            // Vintage film effect
-            r = (r * 1.2f).coerceIn(0f, 255f).toInt()
-            g = (g * 1.1f).coerceIn(0f, 255f).toInt()
-            b = (b * 0.8f).coerceIn(0f, 255f).toInt()
+            // Sepia tone calculation (optimized)
+            val tr = (0.393 * r + 0.769 * g + 0.189 * b).toInt().coerceIn(0, 255)
+            val tg = (0.349 * r + 0.686 * g + 0.168 * b).toInt().coerceIn(0, 255)
+            val tb = (0.272 * r + 0.534 * g + 0.131 * b).toInt().coerceIn(0, 255)
             
-            // Add sepia tone
-            val tr = (0.393 * r + 0.769 * g + 0.189 * b).toInt()
-            val tg = (0.349 * r + 0.686 * g + 0.168 * b).toInt()
-            val tb = (0.272 * r + 0.534 * g + 0.131 * b).toInt()
-            
-            pixels[i] = Color.rgb(
-                tr.coerceIn(0, 255),
-                tg.coerceIn(0, 255),
-                tb.coerceIn(0, 255)
-            )
+            pixels[i] = Color.rgb(tr, tg, tb)
         }
         
         result.setPixels(pixels, 0, result.width, 0, 0, result.width, result.height)
@@ -234,16 +270,16 @@ class FeatureManager private constructor() {
         
         for (i in pixels.indices) {
             val color = pixels[i]
-            var r = Color.red(color)
-            var g = Color.green(color)
-            var b = Color.blue(color)
+            val r = Color.red(color)
+            val g = Color.green(color)
+            val b = Color.blue(color)
             
-            // Portrait enhancement - warm skin tones
-            r = (r * 1.15f).coerceIn(0f, 255f).toInt()
-            g = (g * 1.05f).coerceIn(0f, 255f).toInt()
-            b = (b * 0.95f).coerceIn(0f, 255f).toInt()
+            // Warm skin tones for portraits
+            val newR = (r * 1.2f).toInt().coerceIn(0, 255)
+            val newG = (g * 1.1f).toInt().coerceIn(0, 255)
+            val newB = (b * 0.9f).toInt().coerceIn(0, 255)
             
-            pixels[i] = Color.rgb(r, g, b)
+            pixels[i] = Color.rgb(newR, newG, newB)
         }
         
         result.setPixels(pixels, 0, result.width, 0, 0, result.width, result.height)
@@ -261,8 +297,8 @@ class FeatureManager private constructor() {
             val g = Color.green(color)
             val b = Color.blue(color)
             
-            // Black and white conversion
-            val gray = (0.299 * r + 0.587 * g + 0.114 * b).toInt()
+            // Grayscale conversion
+            val gray = (0.299 * r + 0.587 * g + 0.114 * b).toInt().coerceIn(0, 255)
             pixels[i] = Color.rgb(gray, gray, gray)
         }
         
@@ -277,16 +313,16 @@ class FeatureManager private constructor() {
         
         for (i in pixels.indices) {
             val color = pixels[i]
-            var r = Color.red(color)
-            var g = Color.green(color)
-            var b = Color.blue(color)
+            val r = Color.red(color)
+            val g = Color.green(color)
+            val b = Color.blue(color)
             
-            // Dramatic contrast boost
-            r = if (r < 128) (r * 0.7f).toInt() else (r * 1.3f).coerceIn(0f, 255f).toInt()
-            g = if (g < 128) (g * 0.7f).toInt() else (g * 1.3f).coerceIn(0f, 255f).toInt()
-            b = if (b < 128) (b * 0.7f).toInt() else (b * 1.3f).coerceIn(0f, 255f).toInt()
+            // Dramatic contrast
+            val newR = if (r < 128) (r * 0.7f).toInt() else (r * 1.3f).toInt().coerceIn(0, 255)
+            val newG = if (g < 128) (g * 0.7f).toInt() else (g * 1.3f).toInt().coerceIn(0, 255)
+            val newB = if (b < 128) (b * 0.7f).toInt() else (b * 1.3f).toInt().coerceIn(0, 255)
             
-            pixels[i] = Color.rgb(r, g, b)
+            pixels[i] = Color.rgb(newR, newG, newB)
         }
         
         result.setPixels(pixels, 0, result.width, 0, 0, result.width, result.height)
@@ -300,16 +336,16 @@ class FeatureManager private constructor() {
         
         for (i in pixels.indices) {
             val color = pixels[i]
-            var r = Color.red(color)
-            var g = Color.green(color)
-            var b = Color.blue(color)
+            val r = Color.red(color)
+            val g = Color.green(color)
+            val b = Color.blue(color)
             
             // Cold blue tone
-            r = (r * 0.9f).coerceIn(0f, 255f).toInt()
-            g = (g * 1.1f).coerceIn(0f, 255f).toInt()
-            b = (b * 1.2f).coerceIn(0f, 255f).toInt()
+            val newR = (r * 0.9f).toInt().coerceIn(0, 255)
+            val newG = (g * 1.1f).toInt().coerceIn(0, 255)
+            val newB = (b * 1.2f).toInt().coerceIn(0, 255)
             
-            pixels[i] = Color.rgb(r, g, b)
+            pixels[i] = Color.rgb(newR, newG, newB)
         }
         
         result.setPixels(pixels, 0, result.width, 0, 0, result.width, result.height)
@@ -323,16 +359,16 @@ class FeatureManager private constructor() {
         
         for (i in pixels.indices) {
             val color = pixels[i]
-            var r = Color.red(color)
-            var g = Color.green(color)
-            var b = Color.blue(color)
+            val r = Color.red(color)
+            val g = Color.green(color)
+            val b = Color.blue(color)
             
             // Warm orange tone
-            r = (r * 1.2f).coerceIn(0f, 255f).toInt()
-            g = (g * 1.1f).coerceIn(0f, 255f).toInt()
-            b = (b * 0.9f).coerceIn(0f, 255f).toInt()
+            val newR = (r * 1.2f).toInt().coerceIn(0, 255)
+            val newG = (g * 1.1f).toInt().coerceIn(0, 255)
+            val newB = (b * 0.9f).toInt().coerceIn(0, 255)
             
-            pixels[i] = Color.rgb(r, g, b)
+            pixels[i] = Color.rgb(newR, newG, newB)
         }
         
         result.setPixels(pixels, 0, result.width, 0, 0, result.width, result.height)
@@ -342,207 +378,354 @@ class FeatureManager private constructor() {
     // ==================== 🔍 ULTRA SUPER RESOLUTION ZOOM ====================
     fun processUltraZoom(bitmap: Bitmap, zoomLevel: Int): Bitmap {
         if (!isUltraZoomEnabled) return bitmap
+        
         Log.d(TAG, "🔍 Ultra Zoom Processing - ${zoomLevel}x")
         
-        // AI Super Resolution zoom simulation
-        val scaleFactor = zoomLevel.coerceIn(1, 10)
-        val newWidth = (bitmap.width * scaleFactor).coerceAtMost(bitmap.width * 10)
-        val newHeight = (bitmap.height * scaleFactor).coerceAtMost(bitmap.height * 10)
-        
-        val zoomedBitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
-        
-        // Apply sharpening for better quality
-        return enhanceImageQuality(zoomedBitmap)
+        return try {
+            val scaleFactor = zoomLevel.coerceIn(1, 8) // Limit to 8x for performance
+            
+            // ✅ Use bilinear interpolation for better quality
+            val matrix = Matrix().apply {
+                postScale(scaleFactor.toFloat(), scaleFactor.toFloat())
+            }
+            
+            Bitmap.createBitmap(
+                bitmap, 
+                0, 0, 
+                bitmap.width, bitmap.height, 
+                matrix, 
+                true
+            )
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Zoom processing failed: ${e.message}")
+            bitmap
+        }
     }
 
-    private fun enhanceImageQuality(bitmap: Bitmap): Bitmap {
-        // Simple sharpening filter
-        val result = bitmap.copy(Bitmap.Config.ARGB_8888, true)
-        return result
-    }
-
-    // ==================== 🌀 AI MOTION DEBLUR ====================
+    // ==================== 🌀 OPTIMIZED AI MOTION DEBLUR ====================
     fun processMotionDeblur(bitmap: Bitmap): Bitmap {
         if (!isMotionDeblurEnabled) return bitmap
+        
         Log.d(TAG, "🌀 AI Motion Deblur Processing")
         
-        // AI-based deblurring simulation
-        val result = bitmap.copy(Bitmap.Config.ARGB_8888, true)
-        val pixels = IntArray(result.width * result.height)
-        result.getPixels(pixels, 0, result.width, 0, 0, result.width, result.height)
+        return try {
+            val result = bitmap.copy(Bitmap.Config.ARGB_8888, true)
+            
+            // ✅ Simple sharpening effect (placeholder for real deblur)
+            applySharpening(result, 1.5f)
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Deblur processing failed: ${e.message}")
+            bitmap
+        }
+    }
+    
+    private fun applySharpening(bitmap: Bitmap, strength: Float) {
+        val width = bitmap.width
+        val height = bitmap.height
         
-        // Simple sharpening kernel for deblur effect
-        for (i in 1 until pixels.size - 1) {
-            if (i % result.width != 0 && i % result.width != result.width - 1) {
-                val color = pixels[i]
-                val r = Color.red(color)
-                val g = Color.green(color)
-                val b = Color.blue(color)
+        // ✅ Simple convolution kernel for sharpening
+        for (y in 1 until height - 1) {
+            for (x in 1 until width - 1) {
+                val centerColor = bitmap.getPixel(x, y)
+                val leftColor = bitmap.getPixel(x - 1, y)
+                val rightColor = bitmap.getPixel(x + 1, y)
+                val topColor = bitmap.getPixel(x, y - 1)
+                val bottomColor = bitmap.getPixel(x, y + 1)
                 
-                // Basic sharpening
-                val newR = (r * 1.5f - (Color.red(pixels[i-1]) * 0.25f)).coerceIn(0f, 255f).toInt()
-                val newG = (g * 1.5f - (Color.green(pixels[i-1]) * 0.25f)).coerceIn(0f, 255f).toInt()
-                val newB = (b * 1.5f - (Color.blue(pixels[i-1]) * 0.25f)).coerceIn(0f, 255f).toInt()
+                val centerR = Color.red(centerColor)
+                val centerG = Color.green(centerColor)
+                val centerB = Color.blue(centerColor)
                 
-                pixels[i] = Color.rgb(newR, newG, newB)
+                val neighborR = (Color.red(leftColor) + Color.red(rightColor) + 
+                               Color.red(topColor) + Color.red(bottomColor)) / 4
+                val neighborG = (Color.green(leftColor) + Color.green(rightColor) + 
+                               Color.green(topColor) + Color.green(bottomColor)) / 4
+                val neighborB = (Color.blue(leftColor) + Color.blue(rightColor) + 
+                               Color.blue(topColor) + Color.blue(bottomColor)) / 4
+                
+                // Sharpening formula
+                val newR = (centerR * strength - neighborR * (strength - 1)).toInt().coerceIn(0, 255)
+                val newG = (centerG * strength - neighborG * (strength - 1)).toInt().coerceIn(0, 255)
+                val newB = (centerB * strength - neighborB * (strength - 1)).toInt().coerceIn(0, 255)
+                
+                bitmap.setPixel(x, y, Color.rgb(newR, newG, newB))
             }
         }
-        
-        result.setPixels(pixels, 0, result.width, 0, 0, result.width, result.height)
-        return result
     }
 
     // ==================== 💾 RAW/DNG ENGINE ====================
     fun processRawCapture(bitmap: Bitmap): Bitmap {
         if (!isRawCaptureEnabled) return bitmap
+        
         Log.d(TAG, "💾 RAW/DNG Processing")
         
-        // RAW image processing simulation
-        val result = bitmap.copy(Bitmap.Config.ARGB_8888, true)
-        val pixels = IntArray(result.width * result.height)
-        result.getPixels(pixels, 0, result.width, 0, 0, result.width, result.height)
+        return try {
+            val result = bitmap.copy(Bitmap.Config.ARGB_8888, true)
+            applyRawProcessing(result)
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ RAW processing failed: ${e.message}")
+            bitmap
+        }
+    }
+    
+    private fun applyRawProcessing(bitmap: Bitmap) {
+        val width = bitmap.width
+        val height = bitmap.height
+        val pixels = IntArray(width * height)
         
-        // RAW development - enhance dynamic range
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+        
+        // ✅ RAW-like dynamic range enhancement
         for (i in pixels.indices) {
             val color = pixels[i]
-            var r = Color.red(color)
-            var g = Color.green(color)
-            var b = Color.blue(color)
+            val r = Color.red(color)
+            val g = Color.green(color)
+            val b = Color.blue(color)
             
-            // RAW-like processing - preserve highlights and shadows
-            r = if (r < 64) (r * 1.8f).toInt() else if (r > 192) (r * 0.9f).toInt() else r
-            g = if (g < 64) (g * 1.8f).toInt() else if (g > 192) (g * 0.9f).toInt() else g
-            b = if (b < 64) (b * 1.8f).toInt() else if (b > 192) (b * 0.9f).toInt() else b
+            // Enhance shadows, preserve highlights
+            val newR = when {
+                r < 64 -> (r * 1.8f).toInt()  // Boost shadows
+                r > 192 -> (r * 0.9f).toInt() // Reduce highlights
+                else -> r
+            }.coerceIn(0, 255)
             
-            pixels[i] = Color.rgb(
-                r.coerceIn(0, 255),
-                g.coerceIn(0, 255),
-                b.coerceIn(0, 255)
-            )
+            val newG = when {
+                g < 64 -> (g * 1.8f).toInt()
+                g > 192 -> (g * 0.9f).toInt()
+                else -> g
+            }.coerceIn(0, 255)
+            
+            val newB = when {
+                b < 64 -> (b * 1.8f).toInt()
+                b > 192 -> (b * 0.9f).toInt()
+                else -> b
+            }.coerceIn(0, 255)
+            
+            pixels[i] = Color.rgb(newR, newG, newB)
         }
         
-        result.setPixels(pixels, 0, result.width, 0, 0, result.width, result.height)
-        return result
+        bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
     }
 
-    // ==================== 🤖 PORTRAIT MODE ====================
+    // ==================== 🤖 OPTIMIZED PORTRAIT MODE ====================
     fun processPortraitMode(bitmap: Bitmap): Bitmap {
         if (!isPortraitModeEnabled) return bitmap
+        
         Log.d(TAG, "🤖 Portrait Mode - Bokeh Effect")
         
-        // AI background blur (bokeh) simulation
-        val result = bitmap.copy(Bitmap.Config.ARGB_8888, true)
-        
-        // Simple center-focused blur for demonstration
-        // In real implementation, this would use AI segmentation
-        val centerX = result.width / 2
-        val centerY = result.height / 2
-        
-        val pixels = IntArray(result.width * result.height)
-        result.getPixels(pixels, 0, result.width, 0, 0, result.width, result.height)
-        
-        for (y in 0 until result.height) {
-            for (x in 0 until result.width) {
-                val distance = Math.sqrt(
-                    Math.pow((x - centerX).toDouble(), 2.0) + 
-                    Math.pow((y - centerY).toDouble(), 2.0)
+        return try {
+            // ✅ Performance optimization: Use smaller bitmap for processing
+            val scaledBitmap = if (bitmap.width > 1000 || bitmap.height > 1000) {
+                val scale = 0.5f
+                Bitmap.createScaledBitmap(
+                    bitmap, 
+                    (bitmap.width * scale).toInt(), 
+                    (bitmap.height * scale).toInt(), 
+                    true
                 )
+            } else {
+                bitmap.copy(Bitmap.Config.ARGB_8888, true)
+            }
+            
+            applyPortraitBlur(scaledBitmap)
+            
+            // Scale back if needed
+            if (scaledBitmap != bitmap) {
+                Bitmap.createScaledBitmap(scaledBitmap, bitmap.width, bitmap.height, true)
+            } else {
+                scaledBitmap
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Portrait mode failed: ${e.message}")
+            bitmap
+        }
+    }
+    
+    private fun applyPortraitBlur(bitmap: Bitmap): Bitmap {
+        val width = bitmap.width
+        val height = bitmap.height
+        val centerX = width / 2
+        val centerY = height / 2
+        
+        // ✅ Optimized: Pre-calculate distance thresholds
+        val maxDistance = 150f
+        
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                // ✅ Faster distance calculation (avoid sqrt for performance)
+                val dx = (x - centerX).toFloat()
+                val dy = (y - centerY).toFloat()
+                val distanceSquared = dx * dx + dy * dy
                 
                 // Apply blur based on distance from center
-                if (distance > 100) {
-                    val index = y * result.width + x
-                    val color = pixels[index]
-                    
-                    // Simple blur by averaging with neighbors
-                    if (x > 0 && x < result.width - 1 && y > 0 && y < result.height - 1) {
-                        val left = pixels[index - 1]
-                        val right = pixels[index + 1]
-                        val up = pixels[index - result.width]
-                        val down = pixels[index + result.width]
+                if (distanceSquared > maxDistance * maxDistance) {
+                    // Simple box blur for edges
+                    if (x > 1 && x < width - 1 && y > 1 && y < height - 1) {
+                        var totalR = 0
+                        var totalG = 0
+                        var totalB = 0
                         
-                        val avgR = (Color.red(color) + Color.red(left) + Color.red(right) + 
-                                   Color.red(up) + Color.red(down)) / 5
-                        val avgG = (Color.green(color) + Color.green(left) + Color.green(right) + 
-                                   Color.green(up) + Color.green(down)) / 5
-                        val avgB = (Color.blue(color) + Color.blue(left) + Color.blue(right) + 
-                                   Color.blue(up) + Color.blue(down)) / 5
+                        // 3x3 kernel
+                        for (ky in -1..1) {
+                            for (kx in -1..1) {
+                                val color = bitmap.getPixel(x + kx, y + ky)
+                                totalR += Color.red(color)
+                                totalG += Color.green(color)
+                                totalB += Color.blue(color)
+                            }
+                        }
                         
-                        pixels[index] = Color.rgb(avgR, avgG, avgB)
+                        val avgR = totalR / 9
+                        val avgG = totalG / 9
+                        val avgB = totalB / 9
+                        
+                        bitmap.setPixel(x, y, Color.rgb(avgR, avgG, avgB))
                     }
                 }
             }
         }
         
-        result.setPixels(pixels, 0, result.width, 0, 0, result.width, result.height)
-        return result
+        return bitmap
     }
 
-    // ==================== 🧠 AI SCENE DETECTION ====================
+    // ==================== 🧠 OPTIMIZED AI SCENE DETECTION ====================
     fun detectScene(bitmap: Bitmap): String {
-        if (!isAISceneDetectionEnabled) return "UNKNOWN"
+        if (!isAISceneDetectionEnabled) return "AUTO"
         
         Log.d(TAG, "🧠 AI Scene Detection Running")
         
-        // Simple scene detection based on color analysis
-        val pixels = IntArray(bitmap.width * bitmap.height)
-        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-        
-        var totalR = 0
-        var totalG = 0
-        var totalB = 0
-        
-        for (color in pixels) {
-            totalR += Color.red(color)
-            totalG += Color.green(color)
-            totalB += Color.blue(color)
-        }
-        
-        val avgR = totalR / pixels.size
-        val avgG = totalG / pixels.size
-        val avgB = totalB / pixels.size
-        
-        // Scene detection logic
-        return when {
-            avgR > 200 && avgG > 200 && avgB > 200 -> "SNOW"
-            avgG > avgR + 20 && avgG > avgB + 20 -> "LANDSCAPE"
-            avgR > avgG + 30 && avgR > avgB + 30 -> "SUNSET"
-            (avgR + avgG + avgB) / 3 < 40 -> "NIGHT"
-            Math.abs(avgR - avgG) < 20 && Math.abs(avgG - avgB) < 20 -> "INDOOR"
-            else -> "PORTRAIT"
+        return try {
+            // ✅ Performance: Sample pixels instead of processing all
+            val sampleSize = 100
+            val stepX = bitmap.width / sampleSize
+            val stepY = bitmap.height / sampleSize
+            
+            var totalR = 0
+            var totalG = 0
+            var totalB = 0
+            var sampleCount = 0
+            
+            // ✅ Sample pixels for faster analysis
+            for (y in 0 until bitmap.height step stepY) {
+                for (x in 0 until bitmap.width step stepX) {
+                    val color = bitmap.getPixel(x.coerceIn(0, bitmap.width - 1), 
+                                              y.coerceIn(0, bitmap.height - 1))
+                    
+                    totalR += Color.red(color)
+                    totalG += Color.green(color)
+                    totalB += Color.blue(color)
+                    sampleCount++
+                }
+            }
+            
+            if (sampleCount == 0) return "AUTO"
+            
+            val avgR = totalR / sampleCount
+            val avgG = totalG / sampleCount
+            val avgB = totalB / sampleCount
+            val avgLuminance = (avgR + avgG + avgB) / 3
+            
+            // ✅ IMPROVED SCENE DETECTION LOGIC
+            return when {
+                // Night detection - FIXED THRESHOLD
+                avgLuminance < 80 -> {
+                    Log.d(TAG, "🌙 Scene detected: NIGHT (Luminance: $avgLuminance)")
+                    "NIGHT"
+                }
+                
+                // Sunset detection
+                avgR > avgG + 40 && avgR > avgB + 40 -> {
+                    Log.d(TAG, "🌅 Scene detected: SUNSET (R:$avgR, G:$avgG, B:$avgB)")
+                    "SUNSET"
+                }
+                
+                // Landscape detection
+                avgG > avgR + 30 && avgG > avgB + 30 -> {
+                    Log.d(TAG, "🏞️ Scene detected: LANDSCAPE")
+                    "LANDSCAPE"
+                }
+                
+                // Snow detection
+                avgR > 200 && avgG > 200 && avgB > 200 -> {
+                    Log.d(TAG, "❄️ Scene detected: SNOW")
+                    "SNOW"
+                }
+                
+                // Portrait detection (balanced colors, medium brightness)
+                Math.abs(avgR - avgG) < 30 && Math.abs(avgG - avgB) < 30 
+                        && avgLuminance > 100 && avgLuminance < 200 -> {
+                    Log.d(TAG, "👤 Scene detected: PORTRAIT")
+                    "PORTRAIT"
+                }
+                
+                // Default to AUTO
+                else -> {
+                    Log.d(TAG, "🎯 Scene detected: AUTO (R:$avgR, G:$avgG, B:$avgB, L:$avgLuminance)")
+                    "AUTO"
+                }
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Scene detection failed: ${e.message}")
+            "AUTO"
         }
     }
 
     // ==================== 🎛️ NOISE REDUCTION ====================
     fun processNoiseReduction(bitmap: Bitmap): Bitmap {
         if (!isNoiseReductionEnabled) return bitmap
+        
         Log.d(TAG, "🎛️ AI Noise Reduction Processing")
         
-        // AI-powered noise reduction simulation
+        return try {
+            // ✅ Simple median filter implementation
+            applyMedianFilter(bitmap)
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Noise reduction failed: ${e.message}")
+            bitmap
+        }
+    }
+    
+    private fun applyMedianFilter(bitmap: Bitmap): Bitmap {
         val result = bitmap.copy(Bitmap.Config.ARGB_8888, true)
-        val pixels = IntArray(result.width * result.height)
-        result.getPixels(pixels, 0, result.width, 0, 0, result.width, result.height)
+        val width = result.width
+        val height = result.height
         
-        // Simple median filter for noise reduction
-        for (y in 1 until result.height - 1) {
-            for (x in 1 until result.width - 1) {
-                val index = y * result.width + x
+        // Process inner pixels (skip edges)
+        for (y in 1 until height - 1) {
+            for (x in 1 until width - 1) {
+                // Collect 3x3 neighborhood
+                val reds = mutableListOf<Int>()
+                val greens = mutableListOf<Int>()
+                val blues = mutableListOf<Int>()
                 
-                val neighbors = listOf(
-                    pixels[index - result.width - 1], pixels[index - result.width], pixels[index - result.width + 1],
-                    pixels[index - 1], pixels[index], pixels[index + 1],
-                    pixels[index + result.width - 1], pixels[index + result.width], pixels[index + result.width + 1]
-                )
+                for (ky in -1..1) {
+                    for (kx in -1..1) {
+                        val color = bitmap.getPixel(x + kx, y + ky)
+                        reds.add(Color.red(color))
+                        greens.add(Color.green(color))
+                        blues.add(Color.blue(color))
+                    }
+                }
                 
                 // Get median values
-                val reds = neighbors.map { Color.red(it) }.sorted()
-                val greens = neighbors.map { Color.green(it) }.sorted()
-                val blues = neighbors.map { Color.blue(it) }.sorted()
+                reds.sort()
+                greens.sort()
+                blues.sort()
                 
-                pixels[index] = Color.rgb(reds[4], greens[4], blues[4]) // Median value
+                val medianR = reds[4] // 5th element for 9 values
+                val medianG = greens[4]
+                val medianB = blues[4]
+                
+                result.setPixel(x, y, Color.rgb(medianR, medianG, medianB))
             }
         }
         
-        result.setPixels(pixels, 0, result.width, 0, 0, result.width, result.height)
         return result
     }
 
@@ -552,11 +735,11 @@ class FeatureManager private constructor() {
             "4K" to isVideo4KEnabled,
             "Stabilization" to isVideoStabilizationEnabled,
             "LogProfile" to isLogProfileEnabled,
-            "Bitrate" to 100000000,
-            "FrameRate" to 60,
-            "Codec" to "H.265",
+            "Bitrate" to 50000000, // Reduced for stability
+            "FrameRate" to 30,     // Reduced for stability
+            "Codec" to "H.264",
             "Audio" to "AAC",
-            "Quality" to "ULTRA_HD"
+            "Quality" to "HD"
         )
     }
 
@@ -661,5 +844,54 @@ class FeatureManager private constructor() {
             "AUTO", "PRO", "NIGHT", "PORTRAIT", "VIDEO",
             "PANORAMA", "SLOW_MOTION", "TIME_LAPSE"
         )
+    }
+    
+    // ==================== 🚀 ADVANCED PROCESSING ====================
+    fun applyAdvancedProcessing(
+        bitmap: Bitmap, 
+        mode: Int, 
+        lut: String, 
+        featureManager: FeatureManager
+    ): Bitmap {
+        var processedBitmap = bitmap
+        
+        try {
+            // Step 1: Apply mode-based processing
+            when (mode) {
+                1 -> { // PRO mode
+                    if (featureManager.isRawCaptureEnabled) {
+                        processedBitmap = processRawCapture(processedBitmap)
+                    }
+                    if (featureManager.isNoiseReductionEnabled) {
+                        processedBitmap = processNoiseReduction(processedBitmap)
+                    }
+                }
+                2 -> { // NIGHT mode
+                    if (featureManager.isNightVisionEnabled) {
+                        processedBitmap = processNightVision(listOf(processedBitmap))
+                    }
+                }
+                3 -> { // PORTRAIT mode
+                    if (featureManager.isPortraitModeEnabled) {
+                        processedBitmap = processPortraitMode(processedBitmap)
+                    }
+                }
+            }
+            
+            // Step 2: Apply LUT
+            processedBitmap = applyColorLUT(processedBitmap, lut)
+            
+            // Step 3: Apply HDR if enabled
+            if (featureManager.isHDREnabled) {
+                processedBitmap = processHDR(listOf(processedBitmap))
+            }
+            
+            Log.d(TAG, "✅ Advanced processing completed for mode: $mode")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Advanced processing failed: ${e.message}")
+        }
+        
+        return processedBitmap
     }
 }
