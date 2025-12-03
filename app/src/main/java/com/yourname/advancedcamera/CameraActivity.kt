@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.TextureView
 import android.view.View
@@ -31,6 +32,7 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var tvStatus: TextView
     private lateinit var recordingIndicator: TextView
     private lateinit var controlPanel: LinearLayout
+    private lateinit var lutPanel: LinearLayout  // ✅ نیا اضافہ
     private lateinit var seekZoom: SeekBar
     private lateinit var seekISO: SeekBar
     private lateinit var seekExposure: SeekBar
@@ -48,88 +50,118 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var imageProcessor: ImageProcessor
     private lateinit var fileSaver: FileSaver
     private val featureManager = FeatureManager.getInstance()
+    private val mainHandler = Handler(Looper.getMainLooper())  // ✅ بہتر Handler
     
     // ==================== 📊 APP STATE ====================
     private var currentMode = 0
     private var currentLUT = "CINEMATIC"
     private var isRecording = false
     private var currentFlashMode = "AUTO"
+    private var isManualModeActive = false  // ✅ نیا state
+
+    companion object {
+        private const val TAG = "DSLRCameraPro"
+        private const val REQUEST_CAMERA_PERMISSION = 200
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_camera_pro)
+        setContentView(R.layout.activity_camera)  // ✅ درست کیا گیا!
         
-        Log.d(TAG, "🎬 Activity Created")
+        Log.d(TAG, "🎬 CameraActivity Created")
         
-        // Step 1: Initialize UI first (textureView must be initialized before CameraManager)
-        initializeUI()
+        try {
+            initializeUI()
+            initializeManagers()
+            setupEventListeners()
+            initializeAdvancedFeatures()
+            checkPermissions()
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Initialization failed: ${e.message}", e)
+            Toast.makeText(this, "App initialization failed. Please restart.", Toast.LENGTH_LONG).show()
+            finish()
+        }
+    }
+    
+    // ==================== 🎯 UI INITIALIZATION ====================
+    private fun initializeUI() {
+        try {
+            // ✅ تمام UI elements کو ایک ہی function میں initialize کریں
+            textureView = findViewById(R.id.texture_view)
+            btnCapture = findViewById(R.id.btn_capture)
+            btnSwitchCamera = findViewById(R.id.btn_switch_camera)
+            btnSettings = findViewById(R.id.btn_settings)
+            btnGallery = findViewById(R.id.btn_gallery)
+            btnModeSwitch = findViewById(R.id.btn_mode_switch)
+            btnVideoRecord = findViewById(R.id.btn_video_record)
+            btnFlash = findViewById(R.id.btn_flash)
+            
+            seekZoom = findViewById(R.id.seek_zoom)
+            seekISO = findViewById(R.id.seek_iso)
+            seekExposure = findViewById(R.id.seek_exposure)
+            seekFocus = findViewById(R.id.seek_focus)
+            
+            tvStatus = findViewById(R.id.tv_status)
+            recordingIndicator = findViewById(R.id.recording_indicator)
+            controlPanel = findViewById(R.id.control_panel)
+            lutPanel = findViewById(R.id.lut_panel)  // ✅ درست reference
+            tvZoomValue = findViewById(R.id.tv_zoom_value)
+            tvISOValue = findViewById(R.id.tv_iso_value)
+            tvExposureValue = findViewById(R.id.tv_exposure_value)
+            tvFocusValue = findViewById(R.id.tv_focus_value)
+            tabModes = findViewById(R.id.tab_modes)
+            focusIndicator = findViewById(R.id.focus_indicator)
+            spinnerLUT = findViewById(R.id.spinner_lut)
+            
+            // ✅ ابتدائی visibility
+            controlPanel.visibility = View.GONE
+            lutPanel.visibility = View.GONE
+            recordingIndicator.visibility = View.GONE
+            focusIndicator.visibility = View.INVISIBLE
+            
+            setupLUTSpinner()
+            updateManualControls()
+            updateFlashIcon()
+            
+            Log.d(TAG, "✅ UI Initialized successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ UI Initialization error: ${e.message}", e)
+            throw e  // دوبارہ throw کریں تاکہ onCreate میں catch ہو جائے
+        }
+    }
+    
+    private fun initializeManagers() {
+        // ✅ ترتیب میں initialization
+        cameraManager = CameraManager(this, textureView).apply {
+            setErrorCallback { error ->
+                runOnUiThread {
+                    Toast.makeText(this@CameraActivity, "Camera Error: $error", Toast.LENGTH_SHORT).show()
+                    updateStatus("⚠️ Camera Error: $error")
+                }
+            }
+        }
         
-        // Step 2: Initialize CameraManager with the initialized textureView
-        cameraManager = CameraManager(this, textureView)
-        
-        // Step 3: Initialize other managers
         imageProcessor = ImageProcessor()
         fileSaver = FileSaver(this)
         
-        // Step 4: Setup event listeners (now cameraManager is initialized)
-        setupEventListeners()
-        
-        // Step 5: Other initializations
-        initializeAdvancedFeatures()
-        
-        // Step 6: Check permissions
-        checkPermissions()
-    }
-    
-    private fun initializeUI() {
-        // Initialize TextureView and other UI components
-        textureView = findViewById(R.id.texture_view)
-        btnCapture = findViewById(R.id.btn_capture)
-        btnSwitchCamera = findViewById(R.id.btn_switch_camera)
-        btnSettings = findViewById(R.id.btn_settings)
-        btnGallery = findViewById(R.id.btn_gallery)
-        btnModeSwitch = findViewById(R.id.btn_mode_switch)
-        btnVideoRecord = findViewById(R.id.btn_video_record)
-        btnFlash = findViewById(R.id.btn_flash)
-        
-        seekZoom = findViewById(R.id.seek_zoom)
-        seekISO = findViewById(R.id.seek_iso)
-        seekExposure = findViewById(R.id.seek_exposure)
-        seekFocus = findViewById(R.id.seek_focus)
-        
-        tvStatus = findViewById(R.id.tv_status)
-        recordingIndicator = findViewById(R.id.recording_indicator)
-        controlPanel = findViewById(R.id.control_panel)
-        tvZoomValue = findViewById(R.id.tv_zoom_value)
-        tvISOValue = findViewById(R.id.tv_iso_value)
-        tvExposureValue = findViewById(R.id.tv_exposure_value)
-        tvFocusValue = findViewById(R.id.tv_focus_value)
-        tabModes = findViewById(R.id.tab_modes)
-        focusIndicator = findViewById(R.id.focus_indicator)
-        spinnerLUT = findViewById(R.id.spinner_lut)
-        
-        setupLUTSpinner()
-        updateManualControls()
-        updateFlashIcon()
+        // ✅ TextureView listener
+        textureView.surfaceTextureListener = cameraManager.getSurfaceTextureListener()
     }
     
     private fun initializeAdvancedFeatures() {
         try {
             val availableFeatures = featureManager.getAvailableFeatures()
             updateStatus("🚀 DSLR Pro - ${availableFeatures.size} Features Active")
-            Toast.makeText(this, "✅ ${availableFeatures.size} Advanced Features Loaded", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "✅ ${availableFeatures.size} Advanced Features Loaded", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-            Log.e(TAG, "Advanced features initialization failed: ${e.message}")
+            Log.e(TAG, "Advanced features initialization failed: ${e.message}", e)
             updateStatus("⚠️ Basic Mode - Advanced Features Failed")
         }
     }
     
     // ==================== 🎮 EVENT LISTENERS ====================
     private fun setupEventListeners() {
-        // Now cameraManager is initialized, so set the surface texture listener
-        textureView.surfaceTextureListener = cameraManager.getSurfaceTextureListener()
-        
-        // Button click listeners
+        // ✅ تمام button click listeners
         btnCapture.setOnClickListener { captureImage() }
         btnSwitchCamera.setOnClickListener { switchCamera() }
         btnSettings.setOnClickListener { showAdvancedSettings() }
@@ -138,36 +170,10 @@ class CameraActivity : AppCompatActivity() {
         btnVideoRecord.setOnClickListener { toggleVideoRecording() }
         btnFlash.setOnClickListener { toggleFlashMode() }
         
-        // SeekBar listeners
-        seekZoom.setOnSeekBarChangeListener(createSeekBarListener("ZOOM") { progress ->
-            val zoomLevel = 1.0f + (progress / 100.0f) * 49.0f
-            featureManager.currentZoom = zoomLevel
-            tvZoomValue.text = "${String.format("%.1f", zoomLevel)}x"
-            cameraManager.applyZoom(zoomLevel)
-        })
+        // ✅ SeekBar listeners
+        setupSeekBarListeners()
         
-        seekISO.setOnSeekBarChangeListener(createSeekBarListener("ISO") { progress ->
-            val iso = 50 + (progress * 63.5).toInt()
-            featureManager.currentISO = iso
-            tvISOValue.text = iso.toString()
-            cameraManager.applyManualSettings()
-        })
-        
-        seekExposure.setOnSeekBarChangeListener(createSeekBarListener("EXPOSURE") { progress ->
-            val exposure = progress - 3
-            featureManager.currentExposure = exposure
-            tvExposureValue.text = if (exposure >= 0) "+$exposure" else exposure.toString()
-            cameraManager.applyManualSettings()
-        })
-        
-        seekFocus.setOnSeekBarChangeListener(createSeekBarListener("FOCUS") { progress ->
-            val focus = progress / 100.0f
-            featureManager.currentFocus = focus
-            tvFocusValue.text = "${(focus * 100).toInt()}%"
-            cameraManager.applyManualSettings()
-        })
-        
-        // Tab selection listener
+        // ✅ Tab selection
         tabModes.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab?) {
                 tab?.let {
@@ -180,7 +186,7 @@ class CameraActivity : AppCompatActivity() {
             override fun onTabReselected(tab: TabLayout.Tab?) {}
         })
         
-        // Touch focus
+        // ✅ Touch focus
         textureView.setOnTouchListener { _, event ->
             if (event.action == android.view.MotionEvent.ACTION_DOWN) {
                 val x = event.x
@@ -189,6 +195,54 @@ class CameraActivity : AppCompatActivity() {
             }
             true
         }
+        
+        Log.d(TAG, "✅ Event listeners setup completed")
+    }
+    
+    private fun setupSeekBarListeners() {
+        seekZoom.setOnSeekBarChangeListener(createSeekBarListener("ZOOM") { progress ->
+            try {
+                val zoomLevel = 1.0f + (progress / 100.0f) * 49.0f
+                featureManager.currentZoom = zoomLevel
+                tvZoomValue.text = "${String.format("%.1f", zoomLevel)}x"
+                cameraManager.applyZoom(zoomLevel)
+            } catch (e: Exception) {
+                Log.e(TAG, "Zoom error: ${e.message}")
+            }
+        })
+        
+        seekISO.setOnSeekBarChangeListener(createSeekBarListener("ISO") { progress ->
+            try {
+                val iso = 50 + (progress * 63.5).toInt()
+                featureManager.currentISO = iso
+                tvISOValue.text = iso.toString()
+                cameraManager.applyManualSettings()
+            } catch (e: Exception) {
+                Log.e(TAG, "ISO error: ${e.message}")
+            }
+        })
+        
+        seekExposure.setOnSeekBarChangeListener(createSeekBarListener("EXPOSURE") { progress ->
+            try {
+                val exposure = progress - 3
+                featureManager.currentExposure = exposure
+                tvExposureValue.text = if (exposure >= 0) "+$exposure" else exposure.toString()
+                cameraManager.applyManualSettings()
+            } catch (e: Exception) {
+                Log.e(TAG, "Exposure error: ${e.message}")
+            }
+        })
+        
+        seekFocus.setOnSeekBarChangeListener(createSeekBarListener("FOCUS") { progress ->
+            try {
+                val focus = progress / 100.0f
+                featureManager.currentFocus = focus
+                tvFocusValue.text = "${(focus * 100).toInt()}%"
+                cameraManager.applyManualSettings()
+            } catch (e: Exception) {
+                Log.e(TAG, "Focus error: ${e.message}")
+            }
+        })
     }
     
     // ==================== ⚡ FLASH CONTROL ====================
@@ -225,82 +279,142 @@ class CameraActivity : AppCompatActivity() {
     }
     
     private fun startVideoRecording() {
-        if (cameraManager.startVideoRecording()) {
-            isRecording = true
-            btnVideoRecord.setBackgroundResource(R.drawable.btn_video_recording)
-            btnVideoRecord.setImageResource(R.drawable.ic_video_stop)
-            recordingIndicator.visibility = View.VISIBLE
-            Toast.makeText(this, "🎬 Video Recording Started", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(this, "❌ Failed to start video recording", Toast.LENGTH_SHORT).show()
+        try {
+            if (cameraManager.startVideoRecording()) {
+                isRecording = true
+                runOnUiThread {
+                    btnVideoRecord.setBackgroundResource(R.drawable.btn_video_recording)
+                    btnVideoRecord.setImageResource(R.drawable.ic_video_stop)
+                    recordingIndicator.visibility = View.VISIBLE
+                    Toast.makeText(this, "🎬 Video Recording Started", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                runOnUiThread {
+                    Toast.makeText(this, "❌ Failed to start video recording", Toast.LENGTH_SHORT).show()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Video recording start error: ${e.message}", e)
+            runOnUiThread {
+                Toast.makeText(this, "❌ Recording error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
     }
     
     private fun stopVideoRecording() {
-        val videoFile = cameraManager.stopVideoRecording()
-        if (videoFile != null) {
-            fileSaver.saveVideo(videoFile)
-            Toast.makeText(this, "✅ Video Saved to Gallery", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(this, "❌ Failed to save video", Toast.LENGTH_SHORT).show()
+        try {
+            val videoFile = cameraManager.stopVideoRecording()
+            if (videoFile != null) {
+                fileSaver.saveVideo(videoFile)
+                runOnUiThread {
+                    Toast.makeText(this, "✅ Video Saved to Gallery", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                runOnUiThread {
+                    Toast.makeText(this, "❌ Failed to save video", Toast.LENGTH_SHORT).show()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Video recording stop error: ${e.message}", e)
+            runOnUiThread {
+                Toast.makeText(this, "❌ Save error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        } finally {
+            isRecording = false
+            runOnUiThread {
+                btnVideoRecord.setBackgroundResource(R.drawable.btn_video_record)
+                btnVideoRecord.setImageResource(R.drawable.ic_video_record)
+                recordingIndicator.visibility = View.GONE
+            }
         }
-        
-        isRecording = false
-        btnVideoRecord.setBackgroundResource(R.drawable.btn_video_record)
-        btnVideoRecord.setImageResource(R.drawable.ic_video_record)
-        recordingIndicator.visibility = View.GONE
     }
     
     // ==================== 📷 CAMERA ACTIONS ====================
     private fun captureImage() {
-        cameraManager.captureImage { bitmap ->
-            val processedBitmap = imageProcessor.applyAdvancedProcessing(
-                bitmap, currentMode, currentLUT, featureManager
-            )
-            fileSaver.saveImage(processedBitmap, currentLUT)
+        try {
+            cameraManager.captureImage { bitmap ->
+                try {
+                    val processedBitmap = imageProcessor.applyAdvancedProcessing(
+                        bitmap, currentMode, currentLUT, featureManager
+                    )
+                    fileSaver.saveImage(processedBitmap, currentLUT)
+                    runOnUiThread {
+                        Toast.makeText(this@CameraActivity, "✅ Image Saved!", Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Image processing error: ${e.message}", e)
+                    runOnUiThread {
+                        Toast.makeText(this@CameraActivity, "❌ Processing failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Capture error: ${e.message}", e)
+            Toast.makeText(this, "❌ Capture failed: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
     
     private fun switchCamera() {
-        cameraManager.switchCamera()
+        try {
+            cameraManager.switchCamera()
+        } catch (e: Exception) {
+            Log.e(TAG, "Camera switch error: ${e.message}", e)
+            Toast.makeText(this, "❌ Camera switch failed", Toast.LENGTH_SHORT).show()
+        }
     }
     
     private fun setFocusArea(x: Float, y: Float) {
-        cameraManager.setFocusArea(x, y)
-        
-        // Show focus indicator
-        focusIndicator.x = x - focusIndicator.width / 2
-        focusIndicator.y = y - focusIndicator.height / 2
-        focusIndicator.visibility = View.VISIBLE
-        
-        // Hide focus indicator after delay
-        Handler().postDelayed({
+        try {
+            cameraManager.setFocusArea(x, y)
+            
+            // Show focus indicator
             runOnUiThread {
-                focusIndicator.visibility = View.INVISIBLE
+                focusIndicator.x = x - focusIndicator.width / 2
+                focusIndicator.y = y - focusIndicator.height / 2
+                focusIndicator.visibility = View.VISIBLE
             }
-        }, 2000)
+            
+            // Hide after delay using mainHandler
+            mainHandler.postDelayed({
+                runOnUiThread {
+                    focusIndicator.visibility = View.INVISIBLE
+                }
+            }, 2000L)
+        } catch (e: Exception) {
+            Log.e(TAG, "Focus error: ${e.message}", e)
+        }
     }
     
     // ==================== ⚙️ UI CONTROLS ====================
     private fun setupLUTSpinner() {
-        val lutTypes = featureManager.getLUTTypes()
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, lutTypes)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerLUT.adapter = adapter
-        
-        spinnerLUT.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                currentLUT = lutTypes[position]
-                Toast.makeText(this@CameraActivity, "🎨 ${currentLUT} LUT Selected", Toast.LENGTH_SHORT).show()
+        try {
+            val lutTypes = featureManager.getLUTTypes()
+            val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, lutTypes)
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            spinnerLUT.adapter = adapter
+            
+            spinnerLUT.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    currentLUT = lutTypes[position]
+                    Toast.makeText(this@CameraActivity, "🎨 ${currentLUT} LUT Selected", Toast.LENGTH_SHORT).show()
+                }
+                override fun onNothingSelected(parent: AdapterView<*>?) {}
             }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        } catch (e: Exception) {
+            Log.e(TAG, "LUT spinner error: ${e.message}", e)
         }
     }
     
     private fun createSeekBarListener(controlName: String, onProgressChanged: (Int) -> Unit): SeekBar.OnSeekBarChangeListener {
         return object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                if (fromUser) onProgressChanged(progress)
+                if (fromUser) {
+                    try {
+                        onProgressChanged(progress)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "$controlName control error: ${e.message}")
+                    }
+                }
             }
             override fun onStartTrackingTouch(seekBar: SeekBar) {}
             override fun onStopTrackingTouch(seekBar: SeekBar) {}
@@ -308,45 +422,60 @@ class CameraActivity : AppCompatActivity() {
     }
     
     private fun updateManualControls() {
-        val settings = featureManager.getManualSettings()
-        
-        val zoom = (settings["Zoom"] as? Float ?: 1.0f)
-        seekZoom.progress = ((zoom - 1.0f) / 49.0f * 100).toInt()
-        tvZoomValue.text = "${String.format("%.1f", zoom)}x"
-        
-        val iso = settings["ISO"] as? Int ?: 100
-        seekISO.progress = ((iso - 50) / 63.5).toInt()
-        tvISOValue.text = iso.toString()
-        
-        val exposure = settings["Exposure"] as? Int ?: 0
-        seekExposure.progress = exposure + 3
-        tvExposureValue.text = if (exposure >= 0) "+$exposure" else exposure.toString()
-        
-        val focus = (settings["Focus"] as? Float ?: 0.5f)
-        seekFocus.progress = (focus * 100).toInt()
-        tvFocusValue.text = "${(focus * 100).toInt()}%"
+        try {
+            val settings = featureManager.getManualSettings()
+            
+            settings["Zoom"]?.let {
+                val zoom = it as? Float ?: 1.0f
+                seekZoom.progress = ((zoom - 1.0f) / 49.0f * 100).toInt()
+                tvZoomValue.text = "${String.format("%.1f", zoom)}x"
+            }
+            
+            settings["ISO"]?.let {
+                val iso = it as? Int ?: 100
+                seekISO.progress = ((iso - 50) / 63.5).toInt()
+                tvISOValue.text = iso.toString()
+            }
+            
+            settings["Exposure"]?.let {
+                val exposure = it as? Int ?: 0
+                seekExposure.progress = exposure + 3
+                tvExposureValue.text = if (exposure >= 0) "+$exposure" else exposure.toString()
+            }
+            
+            settings["Focus"]?.let {
+                val focus = it as? Float ?: 0.5f
+                seekFocus.progress = (focus * 100).toInt()
+                tvFocusValue.text = "${(focus * 100).toInt()}%"
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Manual controls update error: ${e.message}", e)
+        }
     }
     
     private fun toggleManualMode() {
-        val isManual = currentMode == 1
-        controlPanel.visibility = if (isManual) View.VISIBLE else View.GONE
-        currentMode = if (isManual) 0 else 1
+        isManualModeActive = !isManualModeActive
+        currentMode = if (isManualModeActive) 1 else 0
+        
+        applyModeSettings(currentMode)
         
         Toast.makeText(this, 
-            if (isManual) "🔘 Auto Mode" else "⚙️ Pro Mode", 
+            if (isManualModeActive) "⚙️ Pro Mode" else "🔘 Auto Mode", 
             Toast.LENGTH_SHORT
         ).show()
     }
     
     private fun applyModeSettings(mode: Int) {
-        when (mode) {
-            1 -> {
-                controlPanel.visibility = View.VISIBLE
-                findViewById<LinearLayout>(R.id.lut_panel).visibility = View.VISIBLE
-            }
-            else -> {
-                controlPanel.visibility = View.GONE
-                findViewById<LinearLayout>(R.id.lut_panel).visibility = View.GONE
+        runOnUiThread {
+            when (mode) {
+                1 -> {
+                    controlPanel.visibility = View.VISIBLE
+                    lutPanel.visibility = View.VISIBLE  // ✅ درست reference
+                }
+                else -> {
+                    controlPanel.visibility = View.GONE
+                    lutPanel.visibility = View.GONE  // ✅ درست reference
+                }
             }
         }
     }
@@ -400,51 +529,56 @@ class CameraActivity : AppCompatActivity() {
     
     // ==================== ⚙️ SETTINGS & UI ====================
     private fun showAdvancedSettings() {
-        val features = featureManager.getAvailableFeatures()
-        val featureStats = featureManager.getFeatureStats()
-        val manualSettings = featureManager.getManualSettings()
-        val lutTypes = featureManager.getLUTTypes()
-        
-        val message = """
-        🚀 DSLR Camera Pro - Advanced Features
-        
-        📊 Feature Stats:
-        • Total Features: ${featureStats["TotalFeatures"]}
-        • Active Features: ${featureStats["ActiveFeatures"]}
-        • AI Features: ${featureStats["AIFeatures"]}
-        • Manual Controls: ${featureStats["ManualFeatures"]}
-        
-        ⚙️ Current Settings:
-        • ISO: ${manualSettings["ISO"]}
-        • Shutter: ${manualSettings["ShutterSpeed"]}
-        • Focus: ${(manualSettings["Focus"] as Float * 100).toInt()}%
-        • Exposure: ${manualSettings["Exposure"]}
-        • Zoom: ${manualSettings["Zoom"]}x
-        • Current LUT: $currentLUT
-        • Flash Mode: $currentFlashMode
-        
-        🎨 Available LUTs:
-        • ${lutTypes.joinToString("\n• ")}
-        
-        🎯 Active Features (${features.size}):
-        • ${features.take(10).joinToString("\n• ")}
-        ${if (features.size > 10) "\n• ... and ${features.size - 10} more" else ""}
-        """.trimIndent()
-        
-        android.app.AlertDialog.Builder(this)
-            .setTitle("🎯 DSLR Camera Settings")
-            .setMessage(message)
-            .setPositiveButton("OK", null)
-            .setNeutralButton("Reset Settings") { _, _ ->
-                featureManager.resetToDefaults()
-                updateManualControls()
-                currentLUT = "CINEMATIC"
-                spinnerLUT.setSelection(0)
-                currentFlashMode = "AUTO"
-                updateFlashIcon()
-                Toast.makeText(this, "🔄 Settings Reset to Default", Toast.LENGTH_SHORT).show()
-            }
-            .show()
+        try {
+            val features = featureManager.getAvailableFeatures()
+            val featureStats = featureManager.getFeatureStats()
+            val manualSettings = featureManager.getManualSettings()
+            val lutTypes = featureManager.getLUTTypes()
+            
+            val message = """
+            🚀 DSLR Camera Pro - Advanced Features
+            
+            📊 Feature Stats:
+            • Total Features: ${featureStats["TotalFeatures"]}
+            • Active Features: ${featureStats["ActiveFeatures"]}
+            • AI Features: ${featureStats["AIFeatures"]}
+            • Manual Controls: ${featureStats["ManualFeatures"]}
+            
+            ⚙️ Current Settings:
+            • ISO: ${manualSettings["ISO"]}
+            • Shutter: ${manualSettings["ShutterSpeed"]}
+            • Focus: ${(manualSettings["Focus"] as? Float ?: 0.5f) * 100}%
+            • Exposure: ${manualSettings["Exposure"]}
+            • Zoom: ${manualSettings["Zoom"]}x
+            • Current LUT: $currentLUT
+            • Flash Mode: $currentFlashMode
+            
+            🎨 Available LUTs:
+            • ${lutTypes.joinToString("\n• ")}
+            
+            🎯 Active Features (${features.size}):
+            • ${features.take(10).joinToString("\n• ")}
+            ${if (features.size > 10) "\n• ... and ${features.size - 10} more" else ""}
+            """.trimIndent()
+            
+            android.app.AlertDialog.Builder(this)
+                .setTitle("🎯 DSLR Camera Settings")
+                .setMessage(message)
+                .setPositiveButton("OK", null)
+                .setNeutralButton("Reset Settings") { _, _ ->
+                    featureManager.resetToDefaults()
+                    updateManualControls()
+                    currentLUT = "CINEMATIC"
+                    spinnerLUT.setSelection(0)
+                    currentFlashMode = "AUTO"
+                    updateFlashIcon()
+                    Toast.makeText(this, "🔄 Settings Reset to Default", Toast.LENGTH_SHORT).show()
+                }
+                .show()
+        } catch (e: Exception) {
+            Log.e(TAG, "Settings dialog error: ${e.message}", e)
+            Toast.makeText(this, "❌ Settings unavailable", Toast.LENGTH_SHORT).show()
+        }
     }
     
     private fun openGallery() {
@@ -452,7 +586,10 @@ class CameraActivity : AppCompatActivity() {
     }
     
     private fun updateStatus(message: String) {
-        runOnUiThread { tvStatus.text = message }
+        runOnUiThread { 
+            tvStatus.text = message 
+            Log.d(TAG, "Status: $message")
+        }
     }
     
     // ==================== 🔄 ACTIVITY LIFECYCLE ====================
@@ -467,9 +604,11 @@ class CameraActivity : AppCompatActivity() {
         cameraManager.onPause()
         super.onPause()
     }
-
-    companion object {
-        private const val TAG = "DSLRCameraPro"
-        private const val REQUEST_CAMERA_PERMISSION = 200
+    
+    override fun onDestroy() {
+        Log.d(TAG, "🗑️ Activity Destroyed")
+        mainHandler.removeCallbacksAndMessages(null)  // ✅ Handler cleanup
+        cameraManager.onDestroy()
+        super.onDestroy()
     }
 }
