@@ -52,7 +52,6 @@
         <item name="rippleColor">#20FFFFFF</item>
         <item name="android:scaleX">1</item>
         <item name="android:scaleY">1</item>
-        <item name="android:stateListAnimator">@anim/button_scale</item>
     </style>
 
     <!-- Icon Button Style -->
