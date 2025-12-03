@@ -420,7 +420,7 @@ class CameraManager(private val context: Context, private val textureView: Textu
     }
     
     // ==================== 📷 CAMERA FUNCTIONS ====================
-    private fun startBackgroundThread() {
+     fun startBackgroundThread() {
         if (backgroundThread == null) {
             backgroundThread = HandlerThread("CameraBackground").apply { 
                 start() 
