@@ -159,7 +159,7 @@ class FeatureManager private constructor() {
         }
     }
     
-    private fun applyHDREffect(bitmap: Bitmap) {
+    private fun applyHDREffect(bitmap: Bitmap):Bitmap{
         val width = bitmap.width
         val height = bitmap.height
         val pixels = IntArray(width * height)
@@ -192,6 +192,7 @@ class FeatureManager private constructor() {
         }
         
         bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
+        return bitmap
     }
 
     // ==================== 🎨 CINEMATIC LUTS & COLOR GRADING ====================
@@ -471,7 +472,7 @@ class FeatureManager private constructor() {
         }
     }
     
-    private fun applyRawProcessing(bitmap: Bitmap) {
+    private fun applyRawProcessing(bitmap: Bitmap):Bitmap{
         val width = bitmap.width
         val height = bitmap.height
         val pixels = IntArray(width * height)
@@ -508,6 +509,7 @@ class FeatureManager private constructor() {
         }
         
         bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
+        return bitmap
     }
 
     // ==================== 🤖 OPTIMIZED PORTRAIT MODE ====================
