@@ -45,7 +45,6 @@
     </style>
 </resources>
 
-<resources>
     <!-- Circle Button Style -->
     <style name="CircleButtonStyle" parent="Widget.MaterialComponents.Button.OutlinedButton">
         <item name="cornerRadius">50dp</item>
