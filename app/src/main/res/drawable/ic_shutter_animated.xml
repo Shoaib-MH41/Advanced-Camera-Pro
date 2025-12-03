@@ -1,17 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<animated-selector xmlns:android="http://schemas.android.com/apk/res/android">
-    
+<animated-selector 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+
     <!-- Normal State -->
-    <item android:id="@+id/normal" android:drawable="@drawable/shutter_normal" />
-    
+    <item 
+        android:id="@+id/normal" 
+        android:drawable="@drawable/shutter_normal" />
+
     <!-- Pressed State -->
-    <item android:id="@+id/pressed" android:drawable="@drawable/shutter_pressed" />
-    
-    <!-- Transition from normal to pressed -->
+    <item 
+        android:id="@+id/pressed" 
+        android:drawable="@drawable/shutter_pressed" />
+
+    <!-- Transition -->
     <transition
         android:fromId="@+id/normal"
         android:toId="@+id/pressed">
+
         <animated-vector android:drawable="@drawable/avd_shutter_press">
+
             <target android:name="shutterCircle">
                 <aapt:attr name="android:animation">
                     <objectAnimator
@@ -22,7 +30,9 @@
                         android:interpolator="@android:interpolator/accelerate_decelerate" />
                 </aapt:attr>
             </target>
+
         </animated-vector>
+
     </transition>
-    
+
 </animated-selector>
