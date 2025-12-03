@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <!-- Background Track -->
+    <item android:id="@android:id/background">
+        <shape>
+            <size android:height="3dp" />
+            <corners android:radius="1.5dp" />
+            <solid android:color="#444444" />
+        </shape>
+    </item>
+    
+    <!-- Secondary Progress (Optional) -->
+    <item android:id="@android:id/secondaryProgress">
+        <clip>
+            <shape>
+                <size android:height="3dp" />
+                <corners android:radius="1.5dp" />
+                <solid android:color="#666666" />
+            </shape>
+        </clip>
+    </item>
+    
+    <!-- Primary Progress with Gradient -->
+    <item android:id="@android:id/progress">
+        <clip>
+            <shape>
+                <size android:height="4dp" />
+                <corners android:radius="2dp" />
+                <gradient
+                    android:startColor="#4CAF50"
+                    android:endColor="#2196F3"
+                    android:angle="0" />
+            </shape>
+        </clip>
+    </item>
+    
+</layer-list>
