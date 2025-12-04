@@ -2,8 +2,10 @@ package com.yourname.advancedcamera.managers
 
 import android.graphics.Bitmap
 import android.graphics.Matrix
+import android.graphics.Rect
 import android.hardware.camera2.CameraCharacteristics
 import android.util.Size
+import java.text.SimpleDateFormat
 import java.util.*
 
 object CameraHelper {
@@ -26,11 +28,11 @@ object CameraHelper {
         areaSize: Float,
         viewWidth: Int,
         viewHeight: Int
-    ): android.graphics.Rect {
+    ): Rect {
         val area = areaSize.toInt()
         
         if (viewWidth == 0 || viewHeight == 0) {
-            return android.graphics.Rect(-1000, -1000, 1000, 1000)
+            return Rect(-1000, -1000, 1000, 1000)
         }
         
         // Convert touch coordinates to sensor coordinates (-1000 to 1000)
@@ -42,7 +44,7 @@ object CameraHelper {
         val right = (left + area).coerceIn(-1000, 1000)
         val bottom = (top + area).coerceIn(-1000, 1000)
         
-        return android.graphics.Rect(left, top, right, bottom)
+        return Rect(left, top, right, bottom)
     }
     
     // ==================== 📏 SIZE UTILITIES ====================
