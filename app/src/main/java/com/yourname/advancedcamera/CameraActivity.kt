@@ -32,7 +32,7 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var tvStatus: TextView
     private lateinit var recordingIndicator: TextView
     private lateinit var controlPanel: LinearLayout
-    private lateinit var lutPanel: LinearLayout  // ✅ نیا اضافہ
+    private lateinit var lutPanel: LinearLayout
     private lateinit var seekZoom: SeekBar
     private lateinit var seekISO: SeekBar
     private lateinit var seekExposure: SeekBar
@@ -46,36 +46,50 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var spinnerLUT: Spinner
     
     // ==================== 🚀 MANAGERS ====================
-    private lateinit var cameraManager: CameraManager
+    private var cameraManager: CameraManager? = null  // ✅ Nullable بنائیں
     private lateinit var imageProcessor: ImageProcessor
     private lateinit var fileSaver: FileSaver
     private val featureManager = FeatureManager.getInstance()
-    private val mainHandler = Handler(Looper.getMainLooper())  // ✅ بہتر Handler
+    private val mainHandler = Handler(Looper.getMainLooper())
     
     // ==================== 📊 APP STATE ====================
     private var currentMode = 0
     private var currentLUT = "CINEMATIC"
     private var isRecording = false
     private var currentFlashMode = "AUTO"
-    private var isManualModeActive = false  // ✅ نیا state
+    private var isManualModeActive = false
+    private var isCameraInitialized = false  // ✅ نیا state
 
     companion object {
         private const val TAG = "DSLRCameraPro"
         private const val REQUEST_CAMERA_PERMISSION = 200
     }
 
+    // ==================== 🎬 ACTIVITY LIFECYCLE ====================
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_camera)  // ✅ درست کیا گیا!
+        setContentView(R.layout.activity_camera)
         
         Log.d(TAG, "🎬 CameraActivity Created")
         
         try {
+            // ✅ Step 1: صرف UI elements initialize کریں
             initializeUI()
-            initializeManagers()
+            
+            // ✅ Step 2: Non-camera managers initialize کریں
+            initializeNonCameraManagers()
+            
+            // ✅ Step 3: Event listeners setup کریں
             setupEventListeners()
+            
+            // ✅ Step 4: Advanced features initialize کریں
             initializeAdvancedFeatures()
+            
+            // ✅ Step 5: Permissions check کریں
             checkPermissions()
+            
+            Log.d(TAG, "✅ onCreate completed successfully")
+            
         } catch (e: Exception) {
             Log.e(TAG, "❌ Initialization failed: ${e.message}", e)
             Toast.makeText(this, "App initialization failed. Please restart.", Toast.LENGTH_LONG).show()
@@ -86,7 +100,6 @@ class CameraActivity : AppCompatActivity() {
     // ==================== 🎯 UI INITIALIZATION ====================
     private fun initializeUI() {
         try {
-            // ✅ تمام UI elements کو ایک ہی function میں initialize کریں
             textureView = findViewById(R.id.texture_view)
             btnCapture = findViewById(R.id.btn_capture)
             btnSwitchCamera = findViewById(R.id.btn_switch_camera)
@@ -104,7 +117,7 @@ class CameraActivity : AppCompatActivity() {
             tvStatus = findViewById(R.id.tv_status)
             recordingIndicator = findViewById(R.id.recording_indicator)
             controlPanel = findViewById(R.id.control_panel)
-            lutPanel = findViewById(R.id.lut_panel)  // ✅ درست reference
+            lutPanel = findViewById(R.id.lut_panel)
             tvZoomValue = findViewById(R.id.tv_zoom_value)
             tvISOValue = findViewById(R.id.tv_iso_value)
             tvExposureValue = findViewById(R.id.tv_exposure_value)
@@ -126,26 +139,25 @@ class CameraActivity : AppCompatActivity() {
             Log.d(TAG, "✅ UI Initialized successfully")
         } catch (e: Exception) {
             Log.e(TAG, "❌ UI Initialization error: ${e.message}", e)
-            throw e  // دوبارہ throw کریں تاکہ onCreate میں catch ہو جائے
+            throw e
         }
     }
     
-    private fun initializeManagers() {
-        // ✅ ترتیب میں initialization
-        cameraManager = CameraManager(this, textureView).apply {
-            setErrorCallback { error ->
-                runOnUiThread {
-                    Toast.makeText(this@CameraActivity, "Camera Error: $error", Toast.LENGTH_SHORT).show()
-                    updateStatus("⚠️ Camera Error: $error")
-                }
-            }
+    private fun initializeNonCameraManagers() {
+        try {
+            // صرف وہ managers جو camera پر منحصر نہیں
+            imageProcessor = ImageProcessor()
+            fileSaver = FileSaver(this)
+            
+            // CameraManager کو یہاں مت initialize کریں
+            // وہ permission ملنے کے بعد initialize ہوگا
+            
+            Log.d(TAG, "✅ Non-camera managers initialized")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Non-camera managers initialization failed: ${e.message}", e)
+            throw e
         }
-        
-        imageProcessor = ImageProcessor()
-        fileSaver = FileSaver(this)
-        
-        // ✅ TextureView listener
-        textureView.surfaceTextureListener = cameraManager.getSurfaceTextureListener()
     }
     
     private fun initializeAdvancedFeatures() {
@@ -159,44 +171,83 @@ class CameraActivity : AppCompatActivity() {
         }
     }
     
-    // ==================== 🎮 EVENT LISTENERS ====================
-    private fun setupEventListeners() {
-        // ✅ تمام button click listeners
-        btnCapture.setOnClickListener { captureImage() }
-        btnSwitchCamera.setOnClickListener { switchCamera() }
-        btnSettings.setOnClickListener { showAdvancedSettings() }
-        btnGallery.setOnClickListener { openGallery() }
-        btnModeSwitch.setOnClickListener { toggleManualMode() }
-        btnVideoRecord.setOnClickListener { toggleVideoRecording() }
-        btnFlash.setOnClickListener { toggleFlashMode() }
-        
-        // ✅ SeekBar listeners
-        setupSeekBarListeners()
-        
-        // ✅ Tab selection
-        tabModes.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
-            override fun onTabSelected(tab: TabLayout.Tab?) {
-                tab?.let {
-                    currentMode = it.position
-                    applyModeSettings(currentMode)
-                    showModeFeatures(currentMode)
+    // ==================== 📱 CAMERA MANAGER INITIALIZATION ====================
+    private fun initializeCameraManager() {
+        try {
+            if (cameraManager != null) {
+                Log.w(TAG, "⚠️ CameraManager already initialized")
+                return
+            }
+            
+            Log.d(TAG, "🔧 Initializing CameraManager...")
+            
+            cameraManager = CameraManager(this, textureView).apply {
+                setErrorCallback { error ->
+                    runOnUiThread {
+                        Toast.makeText(this@CameraActivity, "Camera Error: $error", Toast.LENGTH_SHORT).show()
+                        updateStatus("⚠️ Camera Error: $error")
+                    }
                 }
             }
-            override fun onTabUnselected(tab: TabLayout.Tab?) {}
-            override fun onTabReselected(tab: TabLayout.Tab?) {}
-        })
-        
-        // ✅ Touch focus
-        textureView.setOnTouchListener { _, event ->
-            if (event.action == android.view.MotionEvent.ACTION_DOWN) {
-                val x = event.x
-                val y = event.y
-                setFocusArea(x, y)
-            }
-            true
+            
+            // Set surface texture listener
+            textureView.surfaceTextureListener = cameraManager?.getSurfaceTextureListener()
+            
+            isCameraInitialized = true
+            Log.d(TAG, "✅ CameraManager initialized successfully")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ CameraManager initialization failed: ${e.message}", e)
+            Toast.makeText(this, "Camera initialization failed", Toast.LENGTH_SHORT).show()
+            cameraManager = null
+            isCameraInitialized = false
         }
-        
-        Log.d(TAG, "✅ Event listeners setup completed")
+    }
+    
+    // ==================== 🎮 EVENT LISTENERS ====================
+    private fun setupEventListeners() {
+        try {
+            // ✅ تمام button click listeners
+            btnCapture.setOnClickListener { captureImage() }
+            btnSwitchCamera.setOnClickListener { switchCamera() }
+            btnSettings.setOnClickListener { showAdvancedSettings() }
+            btnGallery.setOnClickListener { openGallery() }
+            btnModeSwitch.setOnClickListener { toggleManualMode() }
+            btnVideoRecord.setOnClickListener { toggleVideoRecording() }
+            btnFlash.setOnClickListener { toggleFlashMode() }
+            
+            // ✅ SeekBar listeners
+            setupSeekBarListeners()
+            
+            // ✅ Tab selection
+            tabModes.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+                override fun onTabSelected(tab: TabLayout.Tab?) {
+                    tab?.let {
+                        currentMode = it.position
+                        applyModeSettings(currentMode)
+                        showModeFeatures(currentMode)
+                    }
+                }
+                override fun onTabUnselected(tab: TabLayout.Tab?) {}
+                override fun onTabReselected(tab: TabLayout.Tab?) {}
+            })
+            
+            // ✅ Touch focus
+            textureView.setOnTouchListener { _, event ->
+                if (event.action == android.view.MotionEvent.ACTION_DOWN) {
+                    val x = event.x
+                    val y = event.y
+                    setFocusArea(x, y)
+                }
+                true
+            }
+            
+            Log.d(TAG, "✅ Event listeners setup completed")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Event listeners setup failed: ${e.message}", e)
+            throw e
+        }
     }
     
     private fun setupSeekBarListeners() {
@@ -205,7 +256,7 @@ class CameraActivity : AppCompatActivity() {
                 val zoomLevel = 1.0f + (progress / 100.0f) * 49.0f
                 featureManager.currentZoom = zoomLevel
                 tvZoomValue.text = "${String.format("%.1f", zoomLevel)}x"
-                cameraManager.applyZoom(zoomLevel)
+                cameraManager?.applyZoom(zoomLevel)
             } catch (e: Exception) {
                 Log.e(TAG, "Zoom error: ${e.message}")
             }
@@ -216,7 +267,7 @@ class CameraActivity : AppCompatActivity() {
                 val iso = 50 + (progress * 63.5).toInt()
                 featureManager.currentISO = iso
                 tvISOValue.text = iso.toString()
-                cameraManager.applyManualSettings()
+                cameraManager?.applyManualSettings()
             } catch (e: Exception) {
                 Log.e(TAG, "ISO error: ${e.message}")
             }
@@ -227,7 +278,7 @@ class CameraActivity : AppCompatActivity() {
                 val exposure = progress - 3
                 featureManager.currentExposure = exposure
                 tvExposureValue.text = if (exposure >= 0) "+$exposure" else exposure.toString()
-                cameraManager.applyManualSettings()
+                cameraManager?.applyManualSettings()
             } catch (e: Exception) {
                 Log.e(TAG, "Exposure error: ${e.message}")
             }
@@ -238,7 +289,7 @@ class CameraActivity : AppCompatActivity() {
                 val focus = progress / 100.0f
                 featureManager.currentFocus = focus
                 tvFocusValue.text = "${(focus * 100).toInt()}%"
-                cameraManager.applyManualSettings()
+                cameraManager?.applyManualSettings()
             } catch (e: Exception) {
                 Log.e(TAG, "Focus error: ${e.message}")
             }
@@ -256,7 +307,7 @@ class CameraActivity : AppCompatActivity() {
         }
         
         updateFlashIcon()
-        cameraManager.applyFlashMode(currentFlashMode)
+        cameraManager?.applyFlashMode(currentFlashMode)
         Toast.makeText(this, "⚡ Flash: $currentFlashMode", Toast.LENGTH_SHORT).show()
     }
     
@@ -280,7 +331,7 @@ class CameraActivity : AppCompatActivity() {
     
     private fun startVideoRecording() {
         try {
-            if (cameraManager.startVideoRecording()) {
+            if (cameraManager?.startVideoRecording() == true) {
                 isRecording = true
                 runOnUiThread {
                     btnVideoRecord.setBackgroundResource(R.drawable.btn_video_recording)
@@ -303,7 +354,7 @@ class CameraActivity : AppCompatActivity() {
     
     private fun stopVideoRecording() {
         try {
-            val videoFile = cameraManager.stopVideoRecording()
+            val videoFile = cameraManager?.stopVideoRecording()
             if (videoFile != null) {
                 fileSaver.saveVideo(videoFile)
                 runOnUiThread {
@@ -332,7 +383,12 @@ class CameraActivity : AppCompatActivity() {
     // ==================== 📷 CAMERA ACTIONS ====================
     private fun captureImage() {
         try {
-            cameraManager.captureImage { bitmap ->
+            if (cameraManager == null) {
+                Toast.makeText(this, "❌ Camera not ready", Toast.LENGTH_SHORT).show()
+                return
+            }
+            
+            cameraManager?.captureImage { bitmap ->
                 try {
                     val processedBitmap = imageProcessor.applyAdvancedProcessing(
                         bitmap, currentMode, currentLUT, featureManager
@@ -356,7 +412,7 @@ class CameraActivity : AppCompatActivity() {
     
     private fun switchCamera() {
         try {
-            cameraManager.switchCamera()
+            cameraManager?.switchCamera()
         } catch (e: Exception) {
             Log.e(TAG, "Camera switch error: ${e.message}", e)
             Toast.makeText(this, "❌ Camera switch failed", Toast.LENGTH_SHORT).show()
@@ -365,7 +421,7 @@ class CameraActivity : AppCompatActivity() {
     
     private fun setFocusArea(x: Float, y: Float) {
         try {
-            cameraManager.setFocusArea(x, y)
+            cameraManager?.setFocusArea(x, y)
             
             // Show focus indicator
             runOnUiThread {
@@ -470,11 +526,11 @@ class CameraActivity : AppCompatActivity() {
             when (mode) {
                 1 -> {
                     controlPanel.visibility = View.VISIBLE
-                    lutPanel.visibility = View.VISIBLE  // ✅ درست reference
+                    lutPanel.visibility = View.VISIBLE
                 }
                 else -> {
                     controlPanel.visibility = View.GONE
-                    lutPanel.visibility = View.GONE  // ✅ درست reference
+                    lutPanel.visibility = View.GONE
                 }
             }
         }
@@ -513,17 +569,23 @@ class CameraActivity : AppCompatActivity() {
         if (permissions.any { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }) {
             ActivityCompat.requestPermissions(this, permissions, REQUEST_CAMERA_PERMISSION)
         } else {
-            cameraManager.startBackgroundThread()
+            // ✅ Permission already granted - initialize camera
+            initializeCameraManager()
+            cameraManager?.startBackgroundThread()
         }
     }
     
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_CAMERA_PERMISSION && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            cameraManager.startBackgroundThread()
-        } else {
-            Toast.makeText(this, "Camera permission required", Toast.LENGTH_LONG).show()
-            finish()
+        if (requestCode == REQUEST_CAMERA_PERMISSION) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // ✅ Permission granted - initialize camera
+                initializeCameraManager()
+                cameraManager?.startBackgroundThread()
+            } else {
+                Toast.makeText(this, "Camera permission required", Toast.LENGTH_LONG).show()
+                finish()
+            }
         }
     }
     
@@ -596,19 +658,34 @@ class CameraActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         Log.d(TAG, "🔄 Activity Resumed")
-        cameraManager.onResume()
+        
+        if (isCameraInitialized) {
+            cameraManager?.onResume()
+        }
     }
     
     override fun onPause() {
         Log.d(TAG, "⏸️ Activity Paused")
-        cameraManager.onPause()
+        
+        if (isCameraInitialized) {
+            cameraManager?.onPause()
+        }
+        
         super.onPause()
     }
     
     override fun onDestroy() {
         Log.d(TAG, "🗑️ Activity Destroyed")
-        mainHandler.removeCallbacksAndMessages(null)  // ✅ Handler cleanup
-        cameraManager.onDestroy()
+        
+        // Cleanup
+        mainHandler.removeCallbacksAndMessages(null)
+        
+        if (isCameraInitialized) {
+            cameraManager?.onDestroy()
+            cameraManager = null
+            isCameraInitialized = false
+        }
+        
         super.onDestroy()
     }
 }
