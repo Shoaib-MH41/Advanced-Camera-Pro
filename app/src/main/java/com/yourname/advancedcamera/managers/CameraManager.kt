@@ -23,8 +23,6 @@ import java.util.*
 import java.util.Collections
 import android.hardware.camera2.params.MeteringRectangle
 import android.media.MediaActionSound
-import android.util.Rational
-import android.util.Range
 
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 class CameraManager(private val context: Context, private val textureView: TextureView) {
@@ -33,8 +31,7 @@ class CameraManager(private val context: Context, private val textureView: Textu
     private var cameraDevice: CameraDevice? = null
     private var captureSession: CameraCaptureSession? = null
     private var previewRequestBuilder: CaptureRequest.Builder? = null
-    private var imageReader: ImageReader? = null
-    private var captureImageReader: ImageReader? = null // ✅ الگ ImageReader تصاویر کے لیے
+    private var captureImageReader: ImageReader? = null
     private var mediaRecorder: MediaRecorder? = null
     
     // ==================== 🎬 VIDEO RECORDING ====================
@@ -49,7 +46,7 @@ class CameraManager(private val context: Context, private val textureView: Textu
     private var backgroundHandler: Handler? = null
     private var backgroundThread: HandlerThread? = null
     
-    // ✅ CameraManager initialization using lazy
+    // ✅ Safe camera manager access
     private val cameraManager: android.hardware.camera2.CameraManager by lazy {
         context.getSystemService(Context.CAMERA_SERVICE) as android.hardware.camera2.CameraManager
     }
@@ -65,6 +62,17 @@ class CameraManager(private val context: Context, private val textureView: Textu
     
     // ✅ Media action sound
     private val mediaSound = MediaActionSound()
+    
+    // ✅ Image capture callback
+    private var onImageCaptured: ((Bitmap) -> Unit)? = null
+    
+    // ✅ State tracking
+    private var isCameraOpened = false
+    private var isPreviewActive = false
+
+    companion object {
+        private const val TAG = "CameraManager"
+    }
     
     init {
         if (context is android.app.Activity) {
@@ -102,11 +110,16 @@ class CameraManager(private val context: Context, private val textureView: Textu
         }
     }
     
+    fun getSurfaceTextureListener(): TextureView.SurfaceTextureListener {
+        return surfaceTextureListener
+    }
+    
     // ==================== 📷 CAMERA STATE CALLBACK ====================
     private val cameraStateCallback = object : CameraDevice.StateCallback() {
         override fun onOpened(camera: CameraDevice) {
             Log.d(TAG, "✅ Camera opened successfully: ${camera.id}")
             cameraDevice = camera
+            isCameraOpened = true
             createCameraPreviewSession()
         }
         
@@ -127,30 +140,30 @@ class CameraManager(private val context: Context, private val textureView: Textu
         override fun onConfigured(session: CameraCaptureSession) {
             Log.d(TAG, "✅ Capture session configured")
             
-            // If camera device is null, close session
+            // Safety check
             if (cameraDevice == null) {
                 session.close()
                 return
             }
             
             captureSession = session
+            isPreviewActive = true
+            
             try {
-                // Configure capture request for preview
-                previewRequestBuilder = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
-                    // ✅ Set AF mode for preview
+                previewRequestBuilder = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)?.apply {
+                    // Set AF mode for preview
                     set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
                     set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON)
-                    
-                    // ✅ Apply flash mode
-                    applyFlashModeToRequest()
-                    
-                    // ✅ Auto focus should be enabled
                     set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_IDLE)
+                    
+                    // Apply flash mode
+                    applyFlashModeToRequest(this)
                 }
                 
                 // Start preview
-                val previewRequest = previewRequestBuilder?.build()
-                captureSession?.setRepeatingRequest(previewRequest!!, null, backgroundHandler)
+                previewRequestBuilder?.build()?.let { request ->
+                    captureSession?.setRepeatingRequest(request, null, backgroundHandler)
+                }
                 
                 Log.d(TAG, "🎬 Preview started successfully")
                 
@@ -172,6 +185,7 @@ class CameraManager(private val context: Context, private val textureView: Textu
             Log.d(TAG, "Capture session closed")
             if (captureSession === session) {
                 captureSession = null
+                isPreviewActive = false
             }
         }
     }
@@ -182,6 +196,7 @@ class CameraManager(private val context: Context, private val textureView: Textu
         
         var image: Image? = null
         var output: FileOutputStream? = null
+        
         try {
             image = reader.acquireLatestImage()
             if (image == null) {
@@ -193,16 +208,16 @@ class CameraManager(private val context: Context, private val textureView: Textu
             val bytes = ByteArray(buffer.remaining())
             buffer.get(bytes)
             
-            // ✅ Play shutter sound
+            // Play shutter sound
             mediaSound.play(MediaActionSound.SHUTTER_CLICK)
             
-            // ✅ Create bitmap from bytes
+            // Create bitmap from bytes
             val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
             
-            // ✅ Rotate bitmap if needed
+            // Rotate bitmap if needed
             val rotatedBitmap = rotateBitmapIfRequired(bitmap)
             
-            // ✅ Save to file
+            // Save to file
             val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
             val storageDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
             val imageFile = File(storageDir, "IMG_${timeStamp}.jpg")
@@ -213,7 +228,7 @@ class CameraManager(private val context: Context, private val textureView: Textu
             
             Log.d(TAG, "✅ Image saved: ${imageFile.absolutePath}")
             
-            // ✅ Callback with bitmap
+            // Callback with bitmap
             onImageCaptured?.invoke(rotatedBitmap)
             
         } catch (e: Exception) {
@@ -223,60 +238,58 @@ class CameraManager(private val context: Context, private val textureView: Textu
             image?.close()
             output?.close()
             
-            // ✅ Restart preview after capture
+            // Restart preview after capture
             restartPreview()
         }
-    }
-    
-    private var onImageCaptured: ((Bitmap) -> Unit)? = null
-    
-    // ==================== 🎮 PUBLIC METHODS ====================
-    
-    fun getSurfaceTextureListener(): TextureView.SurfaceTextureListener {
-        return surfaceTextureListener
     }
     
     // ==================== 🔦 FLASH CONTROL ====================
     fun applyFlashMode(flashMode: String) {
         Log.d(TAG, "⚡ Setting flash mode: $flashMode")
-        currentFlashMode = flashMode
+        currentFlashMode = flashMode.uppercase()
         applyFlashModeToRequest()
     }
     
     private fun applyFlashModeToRequest() {
+        applyFlashModeToRequest(previewRequestBuilder)
+    }
+    
+    private fun applyFlashModeToRequest(builder: CaptureRequest.Builder?) {
         try {
-            if (previewRequestBuilder == null || captureSession == null) {
+            if (builder == null || captureSession == null) {
                 Log.w(TAG, "⚠️ Cannot apply flash mode: preview not ready")
                 return
             }
             
-            when (currentFlashMode.uppercase()) {
+            when (currentFlashMode) {
                 "AUTO" -> {
-                    previewRequestBuilder?.set(CaptureRequest.CONTROL_AE_MODE, 
+                    builder.set(CaptureRequest.CONTROL_AE_MODE, 
                         CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH)
-                    previewRequestBuilder?.set(CaptureRequest.FLASH_MODE, 
+                    builder.set(CaptureRequest.FLASH_MODE, 
                         CaptureRequest.FLASH_MODE_OFF)
                 }
                 "ON" -> {
-                    previewRequestBuilder?.set(CaptureRequest.CONTROL_AE_MODE, 
+                    builder.set(CaptureRequest.CONTROL_AE_MODE, 
                         CaptureRequest.CONTROL_AE_MODE_ON_ALWAYS_FLASH)
-                    previewRequestBuilder?.set(CaptureRequest.FLASH_MODE, 
+                    builder.set(CaptureRequest.FLASH_MODE, 
                         CaptureRequest.FLASH_MODE_SINGLE)
                 }
                 "OFF" -> {
-                    previewRequestBuilder?.set(CaptureRequest.CONTROL_AE_MODE, 
+                    builder.set(CaptureRequest.CONTROL_AE_MODE, 
                         CaptureRequest.CONTROL_AE_MODE_ON)
-                    previewRequestBuilder?.set(CaptureRequest.FLASH_MODE, 
+                    builder.set(CaptureRequest.FLASH_MODE, 
                         CaptureRequest.FLASH_MODE_OFF)
                 }
                 "TORCH" -> {
-                    previewRequestBuilder?.set(CaptureRequest.FLASH_MODE, 
+                    builder.set(CaptureRequest.FLASH_MODE, 
                         CaptureRequest.FLASH_MODE_TORCH)
                 }
             }
             
-            val request = previewRequestBuilder?.build()
-            captureSession?.setRepeatingRequest(request!!, null, backgroundHandler)
+            builder.build()?.let { request ->
+                captureSession?.setRepeatingRequest(request, null, backgroundHandler)
+            }
+            
             Log.d(TAG, "✅ Flash mode applied: $currentFlashMode")
             
         } catch (e: CameraAccessException) {
@@ -300,39 +313,41 @@ class CameraManager(private val context: Context, private val textureView: Textu
                 return false
             }
             
-            // ✅ Stop preview before recording
+            // Stop preview before recording
             captureSession?.stopRepeating()
             
-            // ✅ Setup media recorder
-            setupMediaRecorder()
+            // Setup media recorder
+            if (!setupMediaRecorder()) {
+                return false
+            }
             
-            // ✅ Create recording session
+            // Create recording session
             val surfaces = ArrayList<Surface>()
             
             // Add preview surface
-            val texture = textureView.surfaceTexture
-            texture?.setDefaultBufferSize(previewSize!!.width, previewSize!!.height)
+            val texture = textureView.surfaceTexture ?: return false
+            previewSize?.let {
+                texture.setDefaultBufferSize(it.width, it.height)
+            }
             val previewSurface = Surface(texture)
             surfaces.add(previewSurface)
             
             // Add recorder surface
             recorderSurface = mediaRecorder?.surface
-            if (recorderSurface != null) {
-                surfaces.add(recorderSurface!!)
+            recorderSurface?.let {
+                surfaces.add(it)
             }
             
-            // ✅ Create recording request
-            val recordingRequestBuilder = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_RECORD).apply {
+            // Create recording request
+            val recordingRequestBuilder = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_RECORD)?.apply {
                 addTarget(previewSurface)
-                if (recorderSurface != null) {
-                    addTarget(recorderSurface!!)
-                }
+                recorderSurface?.let { addTarget(it) }
                 set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO)
                 set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON)
-            }
+            } ?: return false
             
-            // ✅ Start recording session
-            cameraDevice!!.createCaptureSession(surfaces, object : CameraCaptureSession.StateCallback() {
+            // Start recording session
+            cameraDevice?.createCaptureSession(surfaces, object : CameraCaptureSession.StateCallback() {
                 override fun onConfigured(session: CameraCaptureSession) {
                     try {
                         val request = recordingRequestBuilder.build()
@@ -377,7 +392,7 @@ class CameraManager(private val context: Context, private val textureView: Textu
             isRecording = false
             Log.d(TAG, "✅ Video recording stopped")
             
-            // ✅ Restart preview
+            // Restart preview
             restartPreview()
             
             videoFile
@@ -389,38 +404,38 @@ class CameraManager(private val context: Context, private val textureView: Textu
         }
     }
     
-    private fun setupMediaRecorder() {
-        try {
+    private fun setupMediaRecorder(): Boolean {
+        return try {
             mediaRecorder = MediaRecorder().apply {
                 setAudioSource(MediaRecorder.AudioSource.CAMCORDER)
                 setVideoSource(MediaRecorder.VideoSource.SURFACE)
                 setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
                 setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
                 setVideoEncoder(MediaRecorder.VideoEncoder.H264)
-                setVideoEncodingBitRate(5_000_000) // Reduced for stability
+                setVideoEncodingBitRate(5_000_000)
                 setVideoFrameRate(30)
-                setVideoSize(1280, 720) // Reduced resolution for stability
+                setVideoSize(1280, 720)
                 
                 // Create video file
                 val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
                 val storageDir = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
-                if (!storageDir?.exists()!!) {
-                    storageDir.mkdirs()
-                }
+                storageDir?.mkdirs()
                 videoFile = File(storageDir, "VID_${timeStamp}.mp4")
-                setOutputFile(videoFile!!.absolutePath)
+                setOutputFile(videoFile?.absolutePath ?: return false)
                 
                 prepare()
             }
             Log.d(TAG, "✅ MediaRecorder setup completed")
+            true
         } catch (e: Exception) {
             Log.e(TAG, "❌ MediaRecorder setup failed: ${e.message}", e)
             mediaRecorder = null
+            false
         }
     }
     
     // ==================== 📷 CAMERA FUNCTIONS ====================
-     fun startBackgroundThread() {
+    fun startBackgroundThread() {
         if (backgroundThread == null) {
             backgroundThread = HandlerThread("CameraBackground").apply { 
                 start() 
@@ -444,12 +459,19 @@ class CameraManager(private val context: Context, private val textureView: Textu
     
     fun onResume() {
         Log.d(TAG, "🔄 onResume called")
+        
+        // Start background thread
+        startBackgroundThread()
+        
+        // Check if texture view is available
         if (textureView.isAvailable) {
-            startBackgroundThread()
-            setupCamera(textureView.width, textureView.height)
-        } else {
-            textureView.surfaceTextureListener = surfaceTextureListener
+            val width = textureView.width
+            val height = textureView.height
+            if (width > 0 && height > 0) {
+                setupCamera(width, height)
+            }
         }
+        // surfaceTextureListener will handle when texture becomes available
     }
     
     fun onPause() {
@@ -464,7 +486,8 @@ class CameraManager(private val context: Context, private val textureView: Textu
         closeCamera()
         stopBackgroundThread()
     }
-    
+
+        // ==================== 🔧 CAMERA SETUP & OPERATIONS ====================
     @SuppressLint("MissingPermission")
     private fun setupCamera(width: Int, height: Int) {
         try {
@@ -530,7 +553,7 @@ class CameraManager(private val context: Context, private val textureView: Textu
             captureImageReader?.setOnImageAvailableListener(captureImageListener, backgroundHandler)
             
             // Open camera if texture is available
-            if (textureView.isAvailable) {
+            if (textureView.isAvailable && !isCameraOpened) {
                 openCamera()
             }
             
@@ -548,7 +571,7 @@ class CameraManager(private val context: Context, private val textureView: Textu
         try {
             Log.d(TAG, "🎬 Opening camera: $cameraId")
             
-            if (cameraId == null) {
+            val cameraId = this.cameraId ?: run {
                 Log.e(TAG, "❌ Camera ID is null")
                 return
             }
@@ -558,7 +581,7 @@ class CameraManager(private val context: Context, private val textureView: Textu
                 startBackgroundThread()
             }
             
-            cameraManager.openCamera(cameraId!!, cameraStateCallback, backgroundHandler)
+            cameraManager.openCamera(cameraId, cameraStateCallback, backgroundHandler)
             
         } catch (e: CameraAccessException) {
             Log.e(TAG, "❌ Failed to open camera: ${e.message}")
@@ -575,16 +598,17 @@ class CameraManager(private val context: Context, private val textureView: Textu
     private fun createCameraPreviewSession() {
         try {
             val texture = textureView.surfaceTexture ?: return
+            val previewSize = this.previewSize ?: return
             
-            texture.setDefaultBufferSize(previewSize!!.width, previewSize!!.height)
+            texture.setDefaultBufferSize(previewSize.width, previewSize.height)
             val surface = Surface(texture)
             
             // Create preview request
-            previewRequestBuilder = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
+            previewRequestBuilder = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)?.apply {
                 addTarget(surface)
                 set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
                 set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON)
-                applyFlashModeToRequest()
+                applyFlashModeToRequest(this)
             }
             
             // Create surfaces list
@@ -594,7 +618,7 @@ class CameraManager(private val context: Context, private val textureView: Textu
             }
             
             // Create capture session
-            cameraDevice!!.createCaptureSession(
+            cameraDevice?.createCaptureSession(
                 surfaces,
                 captureSessionCallback,
                 backgroundHandler
@@ -619,18 +643,21 @@ class CameraManager(private val context: Context, private val textureView: Textu
             captureSession?.stopRepeating()
             
             // Rebuild preview request
-            previewRequestBuilder = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
-                val texture = textureView.surfaceTexture ?: return
-                texture.setDefaultBufferSize(previewSize!!.width, previewSize!!.height)
+            previewRequestBuilder = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)?.apply {
+                val texture = textureView.surfaceTexture ?: return@apply
+                val previewSize = this@CameraManager.previewSize ?: return@apply
+                
+                texture.setDefaultBufferSize(previewSize.width, previewSize.height)
                 addTarget(Surface(texture))
                 
                 set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
                 set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON)
-                applyFlashModeToRequest()
+                applyFlashModeToRequest(this)
             }
             
-            val request = previewRequestBuilder?.build()
-            captureSession?.setRepeatingRequest(request!!, null, backgroundHandler)
+            previewRequestBuilder?.build()?.let { request ->
+                captureSession?.setRepeatingRequest(request, null, backgroundHandler)
+            }
             
             Log.d(TAG, "✅ Preview restarted")
             
@@ -655,7 +682,7 @@ class CameraManager(private val context: Context, private val textureView: Textu
             captureSession?.stopRepeating()
             
             // Create capture request
-            val captureBuilder = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE).apply {
+            val captureBuilder = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)?.apply {
                 captureImageReader?.surface?.let { addTarget(it) }
                 
                 // Set orientation
@@ -663,7 +690,7 @@ class CameraManager(private val context: Context, private val textureView: Textu
                 set(CaptureRequest.JPEG_ORIENTATION, rotation)
                 
                 // Set flash mode for capture
-                when (currentFlashMode.uppercase()) {
+                when (currentFlashMode) {
                     "AUTO" -> set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH)
                     "ON" -> set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_SINGLE)
                     "OFF" -> set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF)
@@ -678,7 +705,7 @@ class CameraManager(private val context: Context, private val textureView: Textu
                         set(CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE, CameraCharacteristics.LENS_OPTICAL_STABILIZATION_MODE_ON)
                     }
                 }
-            }
+            } ?: return
             
             // Capture the image
             captureSession?.capture(captureBuilder.build(), null, backgroundHandler)
@@ -772,8 +799,9 @@ class CameraManager(private val context: Context, private val textureView: Textu
             }
             
             // Apply the changes
-            val request = previewRequestBuilder?.build()
-            captureSession?.setRepeatingRequest(request!!, null, backgroundHandler)
+            previewRequestBuilder?.build()?.let { request ->
+                captureSession?.setRepeatingRequest(request, null, backgroundHandler)
+            }
             
             Log.d(TAG, "🔍 Zoom applied: ${String.format("%.1f", zoomRatio)}x")
             
@@ -794,10 +822,11 @@ class CameraManager(private val context: Context, private val textureView: Textu
             previewRequestBuilder?.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_OFF)
             
             // Reapply flash mode
-            applyFlashModeToRequest()
+            applyFlashModeToRequest(previewRequestBuilder)
             
-            val request = previewRequestBuilder?.build()
-            captureSession?.setRepeatingRequest(request!!, null, backgroundHandler)
+            previewRequestBuilder?.build()?.let { request ->
+                captureSession?.setRepeatingRequest(request, null, backgroundHandler)
+            }
             
             Log.d(TAG, "✅ Manual settings applied")
             
@@ -825,9 +854,11 @@ class CameraManager(private val context: Context, private val textureView: Textu
             val meter = MeteringRectangle(focusRect, 1000)
             
             // Create focus request
-            val focusBuilder = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
+            val focusBuilder = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)?.apply {
                 val texture = textureView.surfaceTexture ?: return
-                texture.setDefaultBufferSize(previewSize!!.width, previewSize!!.height)
+                val previewSize = this@CameraManager.previewSize ?: return
+                
+                texture.setDefaultBufferSize(previewSize.width, previewSize.height)
                 addTarget(Surface(texture))
                 
                 // Cancel any previous focus
@@ -835,7 +866,7 @@ class CameraManager(private val context: Context, private val textureView: Textu
                 set(CaptureRequest.CONTROL_AF_REGIONS, arrayOf(meter))
                 set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_START)
                 set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO)
-            }
+            } ?: return
             
             // Execute focus
             captureSession?.capture(focusBuilder.build(), null, null)
@@ -849,7 +880,7 @@ class CameraManager(private val context: Context, private val textureView: Textu
     }
     
     private fun calculateTapArea(x: Float, y: Float, areaSize: Float): Rect {
-        val area = (areaSize).toInt()
+        val area = areaSize.toInt()
         val viewWidth = textureView.width
         val viewHeight = textureView.height
         
@@ -959,6 +990,9 @@ class CameraManager(private val context: Context, private val textureView: Textu
             recorderSurface?.release()
             recorderSurface = null
             
+            isCameraOpened = false
+            isPreviewActive = false
+            
             Log.d(TAG, "✅ Camera closed successfully")
             
         } catch (e: Exception) {
@@ -982,9 +1016,5 @@ class CameraManager(private val context: Context, private val textureView: Textu
                 lhs.width.toLong() * lhs.height - rhs.width.toLong() * rhs.height
             )
         }
-    }
-    
-    companion object {
-        private const val TAG = "CameraManager"
     }
 }
