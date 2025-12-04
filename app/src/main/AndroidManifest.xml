@@ -2,118 +2,72 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Camera Permission -->
+    <!-- Permissions -->
     <uses-permission android:name="android.permission.CAMERA" />
-    
-    <!-- Storage Permissions (Android 10+) -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
-        android:maxSdkVersion="28" />
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
-        tools:ignore="ScopedStorage" />
-    
-    <!-- Audio Permission for Video Recording -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    
-    <!-- Network Permissions for AI Features -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    
-    <!-- Wake lock for long processing -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    
-    <!-- Feature Requirements - سب required=false کریں -->
-    <uses-feature
-        android:name="android.hardware.camera"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.camera.autofocus"
-        android:required="false" />
-    
-    <!-- Advanced Camera Features - سب required=false -->
-    <uses-feature
-        android:name="android.hardware.camera.any"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.camera.flash"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.camera.front"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.camera.capability.manual_sensor"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.camera.capability.manual_post_processing"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.camera.capability.raw"
-        android:required="false" />
-    
-    <!-- GPU Features for AI Processing -->
-    <uses-feature
-        android:name="android.hardware.opengles.version"
-        android:required="false" />
+
+    <!-- Storage (New Android requires scoped storage) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
+
+    <!-- For older devices -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
+
+    <!-- Camera Requirements -->
+    <uses-feature android:name="android.hardware.camera" android:required="true" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
+    <!-- OpenGL ES 3.0 (Single, Correct Entry) -->
+    <uses-feature android:glEsVersion="0x00030000" android:required="false" />
+
+    <!-- Optional AI GPU features -->
+    <uses-feature android:name="android.hardware.vulkan.level" android:required="false" />
 
     <application
         android:name=".AdvancedCameraApp"
         android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
-        android:requestLegacyExternalStorage="true"
         android:usesCleartextTraffic="true"
-        tools:targetApi="33"
-        tools:ignore="GoogleAppIndexingWarning,UnusedAttribute">
-        
-        <!-- Main Camera Activity -->
+        tools:targetApi="34">
+
+        <!-- Main Activity (Only launcher filter allowed) -->
         <activity
             android:name=".CameraActivity"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             android:exported="true"
             android:label="@string/app_name"
-            android:launchMode="singleTop"
             android:screenOrientation="portrait"
-            android:theme="@style/FullscreenTheme"
-            android:windowSoftInputMode="stateAlwaysHidden">
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:launchMode="singleTop"
+            android:theme="@style/FullscreenTheme">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            
-            <!-- Optional: Camera intent filters -->
-            <!--
-            <intent-filter>
-                <action android:name="android.media.action.IMAGE_CAPTURE" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            
-            <intent-filter>
-                <action android:name="android.media.action.VIDEO_CAPTURE" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            -->
+
         </activity>
 
-        <!-- Settings Activity -->
+        <!-- Settings -->
         <activity
             android:name=".SettingsActivity"
-            android:exported="false"
-            android:label="@string/settings_title"
-            android:theme="@style/AppTheme" />
+            android:exported="false" />
 
-        <!-- Gallery Activity -->
+        <!-- Gallery -->
         <activity
             android:name=".GalleryActivity"
-            android:exported="false"
-            android:label="@string/gallery_title"
-            android:theme="@style/AppTheme" />
+            android:exported="false" />
 
-        <!-- File Provider for sharing images -->
+        <!-- Correct FileProvider -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -124,13 +78,18 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- WorkManager Initializer (اگر استعمال کر رہے ہیں) -->
-        <!--
-        <provider
-            android:name="androidx.work.impl.WorkManagerInitializer"
-            android:authorities="${applicationId}.workmanager-init"
+        <!-- AI Model Service -->
+        <service
+            android:name=".ai.AIModelService"
+            android:enabled="true"
             android:exported="false" />
-        -->
+
+        <!-- Foreground Service -->
+        <service
+            android:name=".service.CameraForegroundService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="camera|mediaProjection" />
 
     </application>
 
