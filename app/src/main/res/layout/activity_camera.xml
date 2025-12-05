@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000"
+    tools:context=".CameraActivity">
+
+    <!-- Camera Preview -->
+    <TextureView
+        android:id="@+id/texture_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_centerInParent="true" />
+
+    <!-- Top Status Bar -->
+    <TextView
+        android:id="@+id/tv_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="16dp"
+        android:text="🚀 DSLR Camera Pro"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:padding="8dp"
+        android:background="#80000000" />
+
+    <!-- Recording Indicator -->
+    <TextView
+        android:id="@+id/recording_indicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true"
+        android:layout_margin="16dp"
+        android:text="🔴 REC"
+        android:textColor="#FF0000"
+        android:textSize="12sp"
+        android:visibility="gone"
+        android:padding="4dp"
+        android:background="#80FFFFFF" />
+
+    <!-- Bottom Controls -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="#80000000">
+
+        <!-- Flash Button -->
+        <ImageButton
+            android:id="@+id/btn_flash"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:src="@drawable/ic_flash_auto"
+            android:background="@drawable/btn_circle"
+            android:contentDescription="Flash" />
+
+        <!-- Capture Button -->
+        <ImageButton
+            android:id="@+id/btn_capture"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:layout_weight="1"
+            android:src="@drawable/ic_capture"
+            android:background="@drawable/btn_circle_primary"
+            android:layout_marginHorizontal="16dp"
+            android:contentDescription="Capture" />
+
+        <!-- Switch Camera -->
+        <ImageButton
+            android:id="@+id/btn_switch_camera"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:src="@drawable/ic_switch_camera"
+            android:background="@drawable/btn_circle"
+            android:contentDescription="Switch Camera" />
+
+    </LinearLayout>
+
+    <!-- Secondary Controls (Right Side) -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
+        android:orientation="vertical"
+        android:layout_margin="16dp"
+        android:background="#80000000"
+        android:padding="8dp">
+
+        <!-- Gallery -->
+        <ImageButton
+            android:id="@+id/btn_gallery"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_gallery"
+            android:background="@drawable/btn_circle"
+            android:layout_marginBottom="8dp"
+            android:contentDescription="Gallery" />
+
+        <!-- Settings -->
+        <ImageButton
+            android:id="@+id/btn_settings"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_settings"
+            android:background="@drawable/btn_circle"
+            android:layout_marginBottom="8dp"
+            android:contentDescription="Settings" />
+
+        <!-- Mode Switch -->
+        <ImageButton
+            android:id="@+id/btn_mode_switch"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_mode_auto"
+            android:background="@drawable/btn_circle"
+            android:layout_marginBottom="8dp"
+            android:contentDescription="Mode Switch" />
+
+        <!-- Video Record -->
+        <ImageButton
+            android:id="@+id/btn_video_record"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_video_record"
+            android:background="@drawable/btn_circle"
+            android:contentDescription="Video Record" />
+
+    </LinearLayout>
+
+    <!-- Focus Indicator -->
+    <ImageView
+        android:id="@+id/focus_indicator"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_focus"
+        android:visibility="invisible"
+        android:contentDescription="Focus Indicator" />
+
+</RelativeLayout>
