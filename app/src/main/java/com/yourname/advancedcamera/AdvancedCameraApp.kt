@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import com.yourname.advancedcamera.ai.AIModelManager
 import com.yourname.advancedcamera.utils.AppExecutors
 import com.yourname.advancedcamera.utils.ImageEngine
+import java.io.File
 
 class AdvancedCameraApp : Application() {
 
@@ -20,11 +21,11 @@ class AdvancedCameraApp : Application() {
         @Volatile
         private var instanceRef: AdvancedCameraApp? = null
 
-        /** 🔥 Global Safe App Instance */
+        /** Global App Instance */
         val instance: AdvancedCameraApp
             get() = instanceRef ?: error("❌ Application not initialized")
 
-        /** 🌍 Safe Global Context */
+        /** Global Safe Context */
         val appContext: Context
             get() = instance.applicationContext
     }
@@ -37,7 +38,6 @@ class AdvancedCameraApp : Application() {
 
         Log.i(TAG, "🚀 Booting Advanced Camera Pro...")
 
-        // Layered Startup
         setupGlobalExceptionHandler()
         initializeCore()
         initializeModules()
@@ -50,23 +50,21 @@ class AdvancedCameraApp : Application() {
     }
 
     // ---------------------------------------------------------
-    // PHASE 1 — CORE FOUNDATION
+    // CORE INITIALIZATION
     // ---------------------------------------------------------
 
     private fun initializeCore() {
         Log.d(TAG, "🏗 Initializing Core Foundation…")
 
-        // Thread Pools
         AppExecutors.init()
 
-        // Auto UI Theme
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
 
         Log.d(TAG, "✔ Core Foundation Ready")
     }
 
     // ---------------------------------------------------------
-    // PHASE 2 — MODULE INITIALIZATION
+    // MODULES
     // ---------------------------------------------------------
 
     private fun initializeModules() {
@@ -102,7 +100,7 @@ class AdvancedCameraApp : Application() {
     }
 
     // ---------------------------------------------------------
-    // PHASE 3 — PERFORMANCE OPTIMIZATION
+    // PERFORMANCE
     // ---------------------------------------------------------
 
     private fun optimizePerformance() {
@@ -125,7 +123,7 @@ class AdvancedCameraApp : Application() {
     }
 
     // ---------------------------------------------------------
-    // CRASH PROTECTION
+    // CRASH LOGGER (FULL VERSION)
     // ---------------------------------------------------------
 
     private fun setupGlobalExceptionHandler() {
@@ -133,12 +131,32 @@ class AdvancedCameraApp : Application() {
 
         Thread.setDefaultUncaughtExceptionHandler { thread, error ->
             Log.e(TAG, "💥 FATAL EXCEPTION in ${thread.name}", error)
+
+            try {
+                val logText = """
+                THREAD: ${thread.name}
+                TIME: ${System.currentTimeMillis()}
+                ERROR: ${error.message}
+                
+                STACKTRACE:
+                ${error.stackTraceToString()}
+                """.trimIndent()
+
+                val file = File(getExternalFilesDir(null), "crash_log.txt")
+                file.writeText(logText)
+
+                Log.e(TAG, "📄 Crash Log Saved: ${file.absolutePath}")
+
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Failed to write crash log: ${e.message}")
+            }
+
             originalHandler?.uncaughtException(thread, error)
         }
     }
 
     // ---------------------------------------------------------
-    // MEMORY MANAGEMENT
+    // MEMORY HANDLERS
     // ---------------------------------------------------------
 
     private fun isLowRamDevice(): Boolean {
@@ -186,9 +204,9 @@ class AdvancedCameraApp : Application() {
     }
 }
 
-/* ---------------------------------------------------------
-   📊 Global App Lifecycle Tracker
-   --------------------------------------------------------- */
+// ---------------------------------------------------------
+// GLOBAL LIFECYCLE TRACKER
+// ---------------------------------------------------------
 
 object AppLifecycleTracker : Application.ActivityLifecycleCallbacks {
 
